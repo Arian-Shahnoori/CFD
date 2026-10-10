@@ -1,180 +1,52 @@
-# CFD Project 01: Steady Two-Dimensional Heat Conduction
+# Steady Two-Dimensional Heat Conduction — Finite-Volume Solver
 
-### A Second-Order Finite-Volume Solver using the Point Gauss-Seidel Method
+A Python project for solving the steady-state heat conduction equation on a square domain using the finite-volume method. The project documents the development of a numerical solver, from the original master's implementation to a modular framework for comparing iterative and direct solution methods.
 
-## Overview
+## Problem Description
 
-This project presents a numerical solution of the two-dimensional steady-state heat conduction (Laplace) equation on a square domain. The governing equation is discretized using a second-order cell-centered Finite Volume Method (FVM) and solved iteratively with the Point Gauss-Seidel algorithm.
-
-The numerical implementation is verified by comparison with the analytical solution of the Laplace equation under prescribed Dirichlet boundary conditions. The repository contains the complete Python implementation, the full technical report written in LaTeX, and all figures used for verification and post-processing.
-
----
-
-## Governing Equation
-
-The physical problem is governed by the two-dimensional Laplace equation
+The governing equation is the two-dimensional Laplace equation,
 
 $$
-\nabla^2T=
-\frac{\partial^2T}{\partial x^2}
-+
-\frac{\partial^2T}{\partial y^2}
-=0
+\nabla^2 T = 0,
 $$
 
-subject to Dirichlet boundary conditions on all four boundaries of the computational domain.
+discretized using a second-order, cell-centered finite-volume formulation on a structured Cartesian grid. Dirichlet boundary conditions are imposed using ghost cells, and the numerical solutions are verified against an analytical solution.
 
-For the selected boundary conditions, the analytical solution is
-
-$$
-T(x,y)=
-\frac{\sin(\pi x)\sinh(\pi y)}
-{\sinh(\pi)}.
-$$
-
-This analytical solution provides an exact reference for verification of the numerical solver.
-
----
-
-## Numerical Method
-
-The implementation consists of
-
-* Cell-centered Finite Volume Method
-* Structured Cartesian mesh
-* Second-order spatial discretization
-* Ghost-cell implementation of Dirichlet boundary conditions
-* Point Gauss-Seidel iterative solver
-* Residual monitoring using the L₂ norm
-
-The residual norm used for convergence assessment is
-
-$$
-L_2=
-\left(
-\frac{1}{N_{CV}}
-\sum_{i=1}^{N_{CV}}R_i^2
-\right)^{1/2}.
-$$
-
----
-
-## Project Features
-
-* Second-order accurate finite-volume discretization
-* Modular Python implementation
-* Analytical verification
-* Residual convergence monitoring
-* Error-field visualization
-* Horizontal and vertical line-cut comparisons
-* Clean LaTeX documentation
-* Reproducible computational setup
-
----
-
-## Results
-
-### Temperature Distribution
-
-![Temperature Field](CFD_Project_01_Heat_Conduction/report/latex/figures/temperature_contours.png)
-
-The numerical solution shows excellent agreement with the analytical solution throughout the computational domain.
-
----
-
-### Error Distribution
-
-![Error Field](CFD_Project_01_Heat_Conduction/report/latex/figures/error_field.png)
-
-The numerical error remains small across the domain and exhibits the expected behavior of a second-order spatial discretization.
-
----
-
-### Residual Convergence
-
-![Residual History](CFD_Project_01_Heat_Conduction/report/latex/figures/residual_history.png)
-
-The Point Gauss-Seidel solver converges monotonically until the prescribed residual tolerance is satisfied.
-
----
-
-### Line-Cut Comparison
-
-![Line Cuts](CFD_Project_01_Heat_Conduction/report/latex/figures/line_cuts.png)
-
-Horizontal and vertical line cuts demonstrate excellent agreement between the numerical and analytical solutions.
-
----
+The project investigates numerical solution methods, convergence behavior, solution accuracy, and computational cost.
 
 ## Repository Structure
 
-```text
-CFD_Project_01_Heat_Conduction/
+### Original MSc Implementation
 
-├── src/
-│   └── CFD_Project_01_Heat_Conduction.py
-│
-├── report/
-│   ├── CFD_Project_01_Report.pdf
-│   └── latex/
-│       ├── main.tex
-│       ├── packages.tex
-|       ├── system_info.json
-│       └── sections/
-│         ├── appendices/
-|       └── figures/
-│
-└── README.md
-```
+[`MSc_Original/`](MSc_Original/)
 
----
+Contains the original Python code and report developed during my master's studies. These files are preserved in their original form to document the initial implementation and provide a reference for subsequent development.
 
-## Requirements
+### V1 — Point Gauss-Seidel and LaTeX Report
 
-* Python 3.x
-* NumPy
-* Matplotlib
+[`V1/`](V1/)
 
-Install the required packages using
+Contains the initial Point Gauss-Seidel implementation and the revised English project report developed in LaTeX. This version focuses on documenting the numerical formulation, implementation, analytical verification, and results in a structured technical report. The code retains the original, non-modular organization.
 
-```bash
-pip install numpy matplotlib
-```
+### V2 — Modular Solver Framework
 
----
+[`V2/`](V2/)
 
-## Verification
+Extends the project into a modular Python codebase, separating numerical solvers, shared computational functions, study definitions, and visualization.
 
-The numerical solution is verified by direct comparison with the analytical solution of the Laplace equation through
+Four solution methods are implemented:
 
-* contour plots,
-* pointwise error fields,
-* horizontal and vertical line cuts,
-* residual convergence histories.
+* **Point Gauss-Seidel:** Sequential point-wise iterative solution.
+* **Successive Over-Relaxation (SOR):** Point-wise iteration with a relaxation factor.
+* **Line-SOR:** Line-based solution of temperature corrections using a tridiagonal coefficient matrix.
+* **Fully implicit direct method:** Assembly and direct solution of the discrete linear system.
 
----
+V2 also includes verification against the analytical solution, mesh-size studies, solver convergence comparisons, and CPU-time evaluations.
 
-## Future Work
+The updated report is available here: [CFD_Project_01_Heat_Conduction_V2.pdf](V2/report/CFD_Project_01_Heat_Conduction_V2.pdf).
 
-This project forms the first component of a larger Computational Fluid Dynamics portfolio. Future developments include
+## Purpose
 
-* Successive Over-Relaxation (SOR)
-* Line Gauss-Seidel
-* Alternating Direction Implicit (ADI)
-* Multigrid acceleration
-* Grid-convergence analysis
-* Performance benchmarking
-* Extension to the Poisson equation
-* Applications to incompressible CFD solvers
+The main objective is to develop a clear and extensible numerical implementation while examining how the choice of solution method affects convergence and computational efficiency. Keeping the original implementation and both subsequent versions makes the development process traceable and preserves the distinction between the original work, the report-focused revision, and the modular solver framework.
 
----
-
-## Report
-
-The complete technical report is available in
-
-
-[📄 CFD Project Report](CFD_Project_01_Heat_Conduction/report/CFD__1_Part1_Point_Gauss_Seidel.pdf)
-
-
-and includes the mathematical derivation, numerical implementation, verification procedure, computational setup, and detailed discussion of the results.
+For implementation details and instructions for running the code, see the README in the corresponding version directory.
