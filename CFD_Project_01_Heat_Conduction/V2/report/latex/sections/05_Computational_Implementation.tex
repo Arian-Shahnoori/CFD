@@ -1,0 +1,169 @@
+\section{Computational Implementation}
+
+The numerical solver was implemented in Python using a modular programming structure. Rather than organizing the entire computation in a single script, the project separates numerical algorithms, shared computational utilities, study definitions, and post-processing into independent modules. This organization improves code readability, facilitates debugging, and allows additional numerical methods and verification studies to be incorporated without restructuring the existing implementation.
+
+The project is organized into three main components: the \texttt{src} package, which contains the numerical methods and supporting functions; the \texttt{studies} package, which defines and executes computational experiments; and the \texttt{main.py} script, which acts as the entry point for running the selected studies.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Software Architecture}
+
+The \texttt{src} package contains the modules responsible for initializing the temperature field, applying boundary conditions, evaluating residuals, generating the computational grid, defining the analytical solution, and visualizing the results. The numerical algorithms are implemented separately in the solver package.
+
+Table~\ref{tab:solver_modules} summarizes the principal modules and their responsibilities.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Principal modules of the numerical solver.}
+\label{tab:solver_modules}
+\begin{tabularx}{\textwidth}{l X}
+\toprule
+\textbf{Module} & \textbf{Purpose} \\
+\midrule
+
+\texttt{config.py}
+& Stores computational settings used by the numerical implementation. \\
+
+\texttt{initialization.py}
+& Constructs the initial temperature field, including the ghost-cell region. \\
+
+\texttt{boundary\_condition.py}
+& Updates ghost-cell temperatures to enforce the prescribed Dirichlet boundary conditions. \\
+
+\texttt{residual.py}
+& Evaluates the residual norm for monitoring the convergence of the iterative solvers and assessing the direct solution. \\
+
+\texttt{grid.py}
+& Generates the structured computational grid and cell-center coordinates. \\
+
+\texttt{exact\_solution.py}
+& Evaluates the analytical temperature distribution for verification. \\
+
+\texttt{solvers/gauss\_seidel.py}
+& Implements the Point Gauss-Seidel iterative method. \\
+
+\texttt{solvers/sor.py}
+& Implements the point-wise Successive Over-Relaxation method. \\
+
+\texttt{solvers/line\_sor.py}
+& Implements Line-SOR by solving for temperature corrections along vertical lines. \\
+
+\texttt{solvers/implicit.py}
+& Assembles and directly solves the linear system for the fully implicit method. \\
+
+\texttt{visualization.py}
+& Generates temperature contours, error fields, line-cut comparisons, and solver convergence and performance plots. \\
+
+\texttt{system\_info.py}
+& Collects computational environment information for documenting the implementation. \\
+
+\bottomrule
+\end{tabularx}
+\end{table}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Study Organization}
+
+The \texttt{studies} package organizes the numerical experiments independently of the solver implementations. Each study defines the mesh sizes, convergence tolerance, relaxation factors, and solver combinations required for a particular investigation. It then executes the relevant solvers and collects the results for tabulation and visualization.
+
+The principal study modules are summarized in Table~\ref{tab:study_modules}.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Computational studies implemented in the project.}
+\label{tab:study_modules}
+\begin{tabularx}{\textwidth}{l X}
+\toprule
+\textbf{Study module} & \textbf{Purpose} \\
+\midrule
+
+\texttt{gauss\_seidel\_verification.py}
+& Compares the Point Gauss-Seidel solution with the analytical solution and evaluates the numerical error. \\
+
+\texttt{gauss\_seidel\_mesh\_size\_study.py}
+& Investigates the effect of mesh resolution on the convergence behavior and computational cost of Point Gauss-Seidel. \\
+
+\texttt{gs\_sor\_comparison.py}
+& Compares Point Gauss-Seidel and SOR for different relaxation factors using a common mesh and convergence tolerance. \\
+
+\texttt{line\_sor\_comparison.py}
+& Compares the convergence and computational cost of point-wise SOR and Line-SOR. \\
+
+\texttt{implicit\_study.py}
+& Compares SOR, Line-SOR, and the fully implicit direct method across multiple mesh sizes and verifies the direct solution against the analytical temperature field. \\
+
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The separation between solver and study modules ensures that the numerical algorithms remain independent of the particular experiments in which they are used. For example, the SOR solver can be employed with different relaxation factors or mesh sizes without modifying its implementation. Similarly, the study modules can compare multiple solvers while using the same residual evaluation and visualization functions.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Solution Algorithm}
+
+The overall computational procedure depends on the selected study and numerical method. The general workflow consists of the following steps:
+
+\begin{enumerate}
+    \item Specify the computational parameters, including mesh resolution, convergence tolerance, and relaxation factor where applicable.
+
+    \item Initialize the temperature field and construct the ghost-cell region required to impose the Dirichlet boundary conditions.
+
+    \item Execute the selected numerical solver:
+    \begin{enumerate}
+        \item Point Gauss-Seidel updates the interior control-volume temperatures sequentially.
+        \item SOR performs the same point-wise update with an additional relaxation step.
+        \item Line-SOR solves a linear system for the temperature corrections along each vertical line and applies the relaxation factor.
+        \item The fully implicit direct method assembles the coefficient matrix and right-hand-side vector and solves the resulting linear system.
+    \end{enumerate}
+
+    \item For the iterative methods, update the ghost-cell values and evaluate the residual norm after each complete sweep. Repeat the procedure until the prescribed convergence tolerance is satisfied. For the direct method, reconstruct the temperature field and evaluate the residual after solving the linear system.
+
+    \item Record the relevant computational information, including iteration counts, residual histories, and elapsed CPU time where applicable.
+
+    \item Generate the required plots and tables to examine numerical accuracy, convergence behavior, and computational performance.
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Solver Implementation}
+
+The Point Gauss-Seidel and SOR solvers use the discrete Laplace equation described in Section~4. Point Gauss-Seidel updates each interior temperature sequentially according to Equation~\ref{eq:gs}, while SOR modifies this update using the relaxation factor according to Equation~\ref{eq:sor}. After each complete sweep, the ghost-cell values are updated, and the residual norm is evaluated to determine whether the convergence criterion has been satisfied.
+
+The Line-SOR solver extends the point-wise relaxation approach by solving for the temperature corrections along an entire vertical line. The line system is assembled using the current temperature field, solved for the correction vector, and followed by a relaxed temperature update. The coefficient matrix is constructed once for a given mesh resolution and reused throughout the iterative procedure. In the present implementation, the line system is solved using \texttt{numpy.linalg.solve()}.
+
+The fully implicit direct solver follows a different computational procedure. The discrete equations for all control volumes are assembled into a dense coefficient matrix and a right-hand-side vector. The resulting system is solved using \texttt{numpy.linalg.solve()}, after which the solution vector is reconstructed as a two-dimensional temperature field. Since the direct method does not rely on iterative temperature updates, it does not produce an iterative convergence history or an iteration count comparable to those of the other methods.
+
+For each solver, the study modules are responsible for measuring and recording the required performance quantities. In particular, the recorded CPU time for the direct method includes matrix assembly and solution, whereas the iterative methods record elapsed computation time over their iterative solution procedures.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Grid Generation}
+
+A structured Cartesian computational mesh is generated by constructing one-dimensional arrays containing the coordinates of the control-volume centers in each spatial direction. These arrays are converted into two-dimensional coordinate matrices using NumPy's \texttt{meshgrid()} function with the \texttt{indexing='ij'} option.
+
+The resulting coordinate matrices satisfy
+\[
+X[i,j]=x_i,
+\qquad
+Y[i,j]=y_j.
+\]
+
+This indexing convention preserves the matrix arrangement used by the numerical solvers, such that the temperature field $T[i,j]$ corresponds to the physical location $(x_i,y_j)$. The consistent arrangement of the coordinate and temperature arrays simplifies the comparison between numerical and analytical solutions during post-processing.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Post-Processing and Performance Evaluation}
+
+The visualization module provides the functions required to examine the temperature field, numerical error, convergence behavior, and computational cost.
+
+Contour plots are used to compare the numerical and analytical temperature distributions. Error-field plots illustrate the spatial variation of the difference between the two solutions, while horizontal and vertical line cuts provide comparisons of their temperature profiles at selected locations.
+
+The convergence plots display the residual norm as a function of iteration number and CPU time, allowing the iterative performance of Point Gauss-Seidel, SOR, and Line-SOR to be compared. Solver-comparison studies additionally report iteration counts, final residuals, and CPU times in tabular form.
+
+For the fully implicit direct method, verification against the analytical solution is performed independently of iterative convergence monitoring. Its CPU time and final residual are reported alongside those of the iterative methods, enabling a comparison of the complete computational approaches over the tested mesh sizes.
+
+Finally, \texttt{main.py} acts as the entry point for executing the selected study functions. This arrangement keeps the main script concise and allows individual verification, mesh-size, and solver-comparison studies to be run without modifying the numerical algorithms themselves.

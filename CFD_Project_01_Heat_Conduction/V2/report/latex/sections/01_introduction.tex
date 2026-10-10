@@ -1,0 +1,11 @@
+
+\section{Introduction}
+
+Heat conduction is one of the three fundamental modes of heat transfer and plays a central role in numerous engineering applications, including thermal management systems, heat exchangers, electronic cooling, and energy systems. While analytical solutions exist for a limited number of idealized problems, most practical engineering applications involve complex geometries, material properties, or boundary conditions that require numerical solution techniques.
+
+Before applying a numerical method to complex engineering problems, it is essential to verify that the numerical implementation correctly reproduces solutions for cases where an analytical solution is available. Code verification provides confidence that the governing equations, boundary conditions, spatial discretization, and numerical solution algorithms have been implemented correctly.
+
+The objective of this project is to develop a numerical solver for the two-dimensional steady-state heat conduction equation on a square domain. The governing equation is discretized using a second-order finite-volume formulation on a structured Cartesian mesh and solved iteratively using the Point Gauss-Seidel method. The numerical solution is verified through direct comparison with the corresponding analytical solution of the Laplace equation.
+
+Beyond validating the numerical implementation, this project establishes a reusable computational framework for future developments, including mesh refinement studies, accelerated iterative methods such as Successive Over-Relaxation (SOR), and more advanced computational fluid dynamics applications.
+

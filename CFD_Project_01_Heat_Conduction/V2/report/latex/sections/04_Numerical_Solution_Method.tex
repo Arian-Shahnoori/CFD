@@ -1,0 +1,426 @@
+\section{Numerical Solution Methods}
+
+The finite-volume discretization presented in the previous section produces a coupled system of algebraic equations for the control-volume temperatures. This section first describes the boundary-condition treatment and convergence measures, then presents four solution approaches: Point Gauss-Seidel, Successive Over-Relaxation (SOR), Line-SOR, and a direct solution of the assembled linear system.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Boundary Condition Implementation}
+
+The numerical formulation employs a cell-centered finite-volume mesh in which temperature values are stored at the centers of the control volumes. Since the physical boundaries do not coincide with computational nodes, the prescribed Dirichlet boundary conditions cannot be imposed directly.
+
+Instead, an additional layer of fictitious control volumes, commonly referred to as ghost cells, is introduced outside the computational domain. Assuming a linear temperature variation between the neighboring cell centers, the ghost-cell value is obtained from
+
+\begin{equation}
+T_G = 2T_b - T_P
+\label{eq:ghost}
+\end{equation}
+
+where $T_b$ is the prescribed boundary temperature, $T_P$ denotes the adjacent interior control-volume temperature, and $T_G$ is the ghost-cell temperature.
+
+Updating the ghost cells ensures that the prescribed boundary conditions are incorporated into the discrete governing equation, including for control volumes adjacent to the physical boundaries. The ghost-cell values are updated during the iterative solution process after each complete sweep of the computational domain.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Residual Definition}
+
+The convergence of the numerical solution is assessed by evaluating the residual of the discrete governing equation. The residual measures the extent to which the current temperature field satisfies the discretized equation.
+
+For the present problem, where $\Delta x=\Delta y$, the residual associated with each control volume is
+
+\begin{equation}
+R_{i,j}
+=
+\frac{
+T_{i+1,j}
++
+T_{i-1,j}
++
+T_{i,j+1}
++
+T_{i,j-1}
+-
+4T_{i,j}
+}
+{\Delta x^2}
+\label{eq:residual}
+\end{equation}
+
+As the numerical solution approaches the converged solution of the discrete system, the residual tends toward zero throughout the computational domain.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Convergence Criterion}
+
+Since each control volume has its own residual, convergence is monitored using a norm of the residual field. The general definition of the residual norm is
+
+\begin{equation}
+L_p
+=
+\left(
+\frac{
+\sum_{i=1}^{N_{\mathrm{CV}}}
+A_i |R_i|^p
+}{
+\sum_{i=1}^{N_{\mathrm{CV}}} A_i
+}
+\right)^{1/p}
+\label{eq:lp}
+\end{equation}
+
+where $N_{\mathrm{CV}}$ is the total number of control volumes, $A_i$ is the area of control volume $i$, and $R_i$ is its corresponding residual.
+
+Since all control volumes have identical area in the present structured mesh, the $L_2$ residual norm simplifies to
+
+\begin{equation}
+L_2
+=
+\left(
+\frac{
+\sum_{i=1}^{N_{\mathrm{CV}}} R_i^2
+}{
+N_{\mathrm{CV}}
+}
+\right)^{1/2}
+\label{eq:l2}
+\end{equation}
+
+The iterative solution procedure continues until the $L_2$ residual norm falls below the prescribed convergence tolerance. The resulting temperature field is then used for post-processing and verification against the analytical solution.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Point Gauss-Seidel Iteration}
+
+The Point Gauss-Seidel method is employed as the baseline iterative solver. Rearranging Equation~\ref{eq:laplace_discrete} to isolate the temperature at the current control volume yields the iterative update equation
+
+\begin{equation}
+\begin{aligned}
+T_{i,j}^{k+1}
+={}&
+\frac{(\Delta y)^2}
+{2\left[(\Delta x)^2+(\Delta y)^2\right]}
+\left(
+T_{i+1,j}^{k}
++
+T_{i-1,j}^{k+1}
+\right)
+\\
+&+
+\frac{(\Delta x)^2}
+{2\left[(\Delta x)^2+(\Delta y)^2\right]}
+\left(
+T_{i,j+1}^{k}
++
+T_{i,j-1}^{k+1}
+\right)
+\end{aligned}
+\label{eq:gs}
+\end{equation}
+
+where $k$ denotes the iteration number.
+
+Starting from an initial temperature distribution, the solution is updated sequentially throughout the computational domain. As the computation proceeds through the grid, newly computed temperatures immediately replace their previous values and are subsequently used when updating neighboring control volumes. This feature distinguishes the Gauss-Seidel method from the Jacobi method.
+
+After each complete sweep, the ghost-cell values are updated according to Equation~\ref{eq:ghost}. The residual norm is then evaluated, and the process is repeated until the convergence criterion is satisfied.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Successive Over-Relaxation (SOR)}
+
+To investigate the effect of the iterative solution method on convergence, the Successive Over-Relaxation (SOR) method is applied using relaxation factors
+
+\[
+\omega = 1.1,\;1.3,\;1.5.
+\]
+
+The convergence behavior is evaluated in terms of both the number of iterations and the CPU time required to reach the prescribed residual tolerance. The results are compared with those obtained using the Point Gauss-Seidel method under the same mesh and convergence criterion.
+
+The SOR method follows the same sequential update procedure as Gauss-Seidel but introduces a relaxation step. First, the Gauss-Seidel estimate, $T_{i,j}^{\mathrm{GS}}$, is calculated using the most recently available neighboring temperatures. The temperature is then updated according to
+
+\begin{equation}
+T_{i,j}^{k+1}
+=
+T_{i,j}^{k}
++
+\omega
+\left(
+T_{i,j}^{\mathrm{GS}}
+-
+T_{i,j}^{k}
+\right).
+\label{eq:sor}
+\end{equation}
+
+Here, $\omega$ is the relaxation factor. Values of $\omega>1$ correspond to over-relaxation and may accelerate convergence, whereas $0<\omega<1$ corresponds to under-relaxation. The effectiveness of over-relaxation depends on the problem and the selected relaxation factor; excessively large values may lead to poor convergence or divergence.
+
+For the present study, a $40\times40$ control-volume mesh and a residual tolerance of $10^{-12}$ are used. The Point Gauss-Seidel method and SOR with $\omega=1.1$, $1.3$, and $1.5$ are executed from the same initial condition. Residual histories are recorded as functions of both iteration number and CPU time. The resulting convergence behavior is presented in Figure~\ref{fig:gs_sor_convergence}, while the corresponding iteration counts and computational times are reported in Table~\ref{tab:gs_sor_comparison}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Line-SOR}
+
+The Line Successive Over-Relaxation (Line-SOR) method is introduced to improve the convergence of the iterative solution. Unlike point-wise SOR, which updates one control volume at a time, Line-SOR determines the temperature corrections along an entire line of control volumes simultaneously. The method is therefore semi-implicit: the solution is treated implicitly in one spatial direction and explicitly in the other.
+
+For the present problem, the $y$-direction is selected as the implicit direction, while the $x$-direction is treated explicitly. This choice couples vertically adjacent control volumes and incorporates their interaction with the upper boundary through the line system. The corrections along each vertical line are determined simultaneously, while the coupling in the horizontal direction is treated explicitly. The relaxation factor is set to
+\[
+\omega = 1.1.
+\]
+The solver is applied to the four mesh configurations with $N=10$, $20$, $30$, and $40$ control volumes in each direction. Its computational performance is compared with that of point-wise SOR using the same relaxation factor, mesh resolution, and convergence tolerance.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Line-SOR Formulation}
+
+The Point SOR method updates the temperature using a correction to the current value. In Line-SOR, instead of computing the corrections independently, the corrections along a complete line are determined simultaneously.
+
+For a fixed value of $i$, the unknown corrections are
+\[
+\delta T_{i,1}^{k+1},
+\delta T_{i,2}^{k+1},
+\ldots,
+\delta T_{i,N}^{k+1},
+\]
+where $k$ denotes the previous iteration and $k+1$ denotes the current iteration.
+
+For a uniform grid, $\Delta x=\Delta y$, the discrete Laplace equation can be expressed in terms of the corrections as
+\begin{equation}
+-\frac{1}{4}\delta T_{i,j+1}^{k+1}
++
+\delta T_{i,j}^{k+1}
+-
+\frac{1}{4}\delta T_{i,j-1}^{k+1}
+=
+b_{i,j},
+\label{eq:line_sor_correction}
+\end{equation}
+where the right-hand-side term is
+\begin{equation}
+b_{i,j}
+=
+\frac{1}{4}
+\left(
+T_{i+1,j}
++
+T_{i-1,j}
++
+T_{i,j+1}
++
+T_{i,j-1}
+\right)
+-
+T_{i,j}.
+\label{eq:line_sor_rhs}
+\end{equation}
+
+The temperature values on the right-hand side are the currently available values during the sweep. In particular, the neighboring values in the explicit $x$-direction are taken from the current solution field, whereas the corrections in the implicit $y$-direction are treated as simultaneous unknowns.
+
+Equations~\ref{eq:line_sor_correction} and~\ref{eq:line_sor_rhs} form a tridiagonal system for the corrections along each vertical line.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Matrix Formulation}
+
+For a fixed $i$, the vector of unknown corrections is defined as
+\begin{equation}
+\boldsymbol{\delta T}_i
+=
+\begin{bmatrix}
+\delta T_{i,1}^{k+1}\\
+\delta T_{i,2}^{k+1}\\
+\vdots\\
+\delta T_{i,N}^{k+1}
+\end{bmatrix},
+\end{equation}
+and the corresponding right-hand-side vector is
+\begin{equation}
+\mathbf{b}_i
+=
+\begin{bmatrix}
+b_{i,1}\\
+b_{i,2}\\
+\vdots\\
+b_{i,N}
+\end{bmatrix}.
+\end{equation}
+
+The line equations can then be assembled into the linear system
+\begin{equation}
+\mathbf{A}\boldsymbol{\delta T}_i
+=
+\mathbf{b}_i,
+\label{eq:line_sor_matrix}
+\end{equation}
+where the coefficient matrix is
+\begin{equation}
+\mathbf{A}
+=
+\begin{bmatrix}
+\frac{5}{4} & -\frac{1}{4} & 0 & \cdots & 0\\
+-\frac{1}{4} & 1 & -\frac{1}{4} & \ddots & \vdots\\
+0 & -\frac{1}{4} & 1 & \ddots & 0\\
+\vdots & \ddots & \ddots & \ddots & -\frac{1}{4}\\
+0 & \cdots & 0 & -\frac{1}{4} & \frac{5}{4}
+\end{bmatrix}.
+\label{eq:line_sor_coefficient_matrix}
+\end{equation}
+
+The first and last diagonal coefficients differ from those of the interior rows because of the Dirichlet boundary conditions implemented through ghost cells. At the lower boundary, the ghost-cell relation gives
+\[
+\delta T_{i,0}^{k+1}
+=
+-\delta T_{i,1}^{k+1},
+\]
+while at the upper boundary,
+\[
+\delta T_{i,N+1}^{k+1}
+=
+-\delta T_{i,N}^{k+1}.
+\]
+Substituting these relations into the line equations changes the corresponding diagonal coefficients from $1$ to $1+\frac{1}{4}=\frac{5}{4}$.
+
+Consequently, the first matrix row contains only the diagonal coefficient $\frac{5}{4}$ and the upper off-diagonal coefficient $-\frac{1}{4}$. Similarly, the last row contains the lower off-diagonal coefficient and the diagonal coefficient $\frac{5}{4}$. No coefficient is assigned outside the matrix at either end of the line.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Temperature Update and Implementation}
+
+After solving Equation~\ref{eq:line_sor_matrix}, the temperature field is updated using the relaxation factor:
+\begin{equation}
+T_{i,j}^{k+1}
+=
+T_{i,j}^{k}
++
+\omega\delta T_{i,j}^{k+1}.
+\label{eq:line_sor_update}
+\end{equation}
+
+The computational procedure proceeds through the vertical lines of the domain. For each line, the right-hand-side vector is constructed from the currently available temperature values, the line system is solved, and the resulting corrections are used to update the temperatures. The upper and lower ghost cells are then updated for that line. After all lines have been processed, the left and right ghost-cell values are updated.
+
+The coefficient matrix depends only on the mesh resolution and is therefore constructed once and reused for every line and iteration. In the current implementation, the linear system is solved using NumPy's \texttt{numpy.linalg.solve()} function. Although the coefficient matrix is tridiagonal and could be solved using a specialized algorithm such as the Thomas algorithm, that optimization is not included in the present implementation.
+
+After each complete sweep, the residual norm is evaluated according to Equation~\ref{eq:l2}. Iterations continue until the prescribed convergence tolerance is satisfied. The computational times of Line-SOR and point-wise SOR are subsequently compared for the selected mesh sizes. The corresponding performance results are presented in Figure~\ref{fig:line_sor_convergence} and Table~\ref{tab:line_sor_comparison}.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Fully Implicit Direct Method}
+
+Finally, the fully implicit direct method is employed to solve the discretized governing equation. Unlike the iterative methods described previously, this approach assembles the equations for all control volumes into a single linear system and solves for the complete temperature field simultaneously.
+
+The method is applied to mesh sizes $N=10$, $20$, $30$, and $40$. The computational time is recorded for each case and compared with the corresponding results obtained using the iterative solvers.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Linear System Formulation}
+
+In the fully implicit direct method, the discretized equations for all control volumes are assembled into the linear system
+\begin{equation}
+\mathbf{A}\mathbf{X}=\mathbf{d},
+\label{eq:implicit_system}
+\end{equation}
+where $\mathbf{A}$ is the coefficient matrix, $\mathbf{X}$ is the vector of unknown control-volume temperatures, and $\mathbf{d}$ is the known right-hand-side vector.
+
+For a mesh containing $N$ control volumes in each direction, the system contains $N^2$ unknowns. Accordingly, the coefficient matrix has dimensions $N^2\times N^2$, while both vectors contain $N^2$ entries.
+
+The cell indices are defined as $i,j=0,\ldots,N-1$, with $i$ increasing from left to right and $j$ increasing from bottom to top. The physical boundary temperatures are
+\begin{equation}
+T_{\mathrm{bottom}}
+=
+T_{\mathrm{left}}
+=
+T_{\mathrm{right}}
+=
+0,
+\label{eq:implicit_zero_boundaries}
+\end{equation}
+and
+\begin{equation}
+T_{\mathrm{top},i}
+=
+\sin\left(
+\pi\frac{i+\frac{1}{2}}{N}
+\right).
+\label{eq:implicit_top_boundary}
+\end{equation}
+
+For interior control volumes, the discretized Laplace equation retains the standard five-point stencil:
+\begin{equation}
+\begin{aligned}
+&T_{i-1,j}
++T_{i+1,j}
++T_{i,j-1}
++T_{i,j+1}\\
+&\qquad -4T_{i,j}=0.
+\end{aligned}
+\label{eq:implicit_interior}
+\end{equation}
+
+For control volumes adjacent to a physical boundary, the ghost-cell temperatures are eliminated using Equation~\ref{eq:ghost}. Consequently, the resulting equation depends on the location of the control volume.
+
+For example, a control volume on the left boundary, excluding the corners, satisfies
+\begin{equation}
+T_{1,j}
++T_{0,j-1}
++T_{0,j+1}
+-5T_{0,j}
+=
+-2T_{\mathrm{left}}.
+\label{eq:implicit_left_boundary}
+\end{equation}
+
+Similarly, a corner control volume adjacent to two physical boundaries satisfies an equation of the form
+\begin{equation}
+T_{\mathrm{nb},1}
++
+T_{\mathrm{nb},2}
+-
+6T_{i,j}
+=
+-2T_{b,1}
+-
+2T_{b,2},
+\label{eq:implicit_corner}
+\end{equation}
+where $T_{\mathrm{nb},1}$ and $T_{\mathrm{nb},2}$ are the temperatures of the two neighboring interior control volumes, and $T_{b,1}$ and $T_{b,2}$ are the prescribed temperatures at the adjoining boundaries.
+
+Thus, the central coefficients are $-4$ for interior control volumes, $-5$ for non-corner boundary control volumes, and $-6$ for corner control volumes. The corresponding right-hand-side entries account for the prescribed wall temperatures. The equations for the remaining boundary locations follow from the same procedure, with the spatially varying temperature on the upper boundary evaluated at each cell-center coordinate.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Coefficient Matrix Assembly}
+
+To represent the two-dimensional temperature field as a one-dimensional vector, the grid indices are mapped to a linear index using
+\begin{equation}
+p(i,j)=jN+i,
+\label{eq:implicit_index_mapping}
+\end{equation}
+such that the temperature of control volume $(i,j)$ corresponds to entry $p(i,j)$ of $\mathbf{X}$.
+
+Each control volume contributes one row to the coefficient matrix and one entry to the right-hand-side vector. The matrix is initially set to zero, and each row is assembled from the discrete governing equation.
+
+The assembly procedure begins by assigning the central coefficient $-4$ to the corresponding diagonal entry. For each of the four neighboring directions, the following procedure is applied:
+
+\begin{itemize}
+    \item If the neighboring control volume lies inside the computational domain, its corresponding matrix coefficient is assigned the value $+1$.
+    \item If the neighboring location lies outside the domain, the ghost-cell value is eliminated using the corresponding Dirichlet boundary condition. The central coefficient is reduced by one, and the right-hand-side entry is reduced by twice the prescribed boundary temperature.
+\end{itemize}
+
+For example, eliminating one ghost-cell temperature changes the central coefficient from $-4$ to $-5$, while eliminating two ghost-cell temperatures changes it to $-6$. This procedure automatically accounts for interior, boundary, and corner control volumes without requiring separate matrix-assembly routines for each case.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Direct Solution and Computational Time}
+
+After assembling the coefficient matrix and the right-hand-side vector, the system is solved using NumPy's \texttt{numpy.linalg.solve()} function:
+\begin{equation}
+\mathbf{X}=\operatorname{solve}(\mathbf{A},\mathbf{d}).
+\label{eq:implicit_direct_solution}
+\end{equation}
+
+The resulting vector is reshaped into the two-dimensional temperature field. The solution is then stored in the interior of an array containing an additional layer of ghost cells, and the boundary conditions are applied to reconstruct the corresponding ghost-cell values.
+
+Unlike the iterative methods, the direct method does not require repeated temperature updates or an iterative convergence criterion. Instead, the residual norm can be evaluated after the solution has been obtained to check the consistency of the computed temperature field with the discretized governing equation.
+
+The computational time is measured from the beginning of matrix assembly until the solution and temperature field have been reconstructed. It therefore includes matrix construction, the direct linear solve, and the associated solution reconstruction. The resulting CPU times are compared with those of the iterative methods in Figure~\ref{fig:solver_cpu_time_comparison} and Table~\ref{tab:solver_cpu_time_comparison}.
+
+The present implementation stores the coefficient matrix as a dense array, even though most of its entries are zero. Consequently, its memory requirements and computational cost increase rapidly as the mesh is refined. This provides an important consideration when comparing the direct method with the iterative solvers.
+

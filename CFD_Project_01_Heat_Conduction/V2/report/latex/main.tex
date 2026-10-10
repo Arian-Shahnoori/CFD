@@ -1,0 +1,78 @@
+\documentclass[11pt,a4paper]{article}
+
+%------------------------------------------------
+% Packages and formatting
+%------------------------------------------------
+\input{packages}
+
+%------------------------------------------------
+% Document information
+%------------------------------------------------
+
+\title{
+    \Huge\textbf{Steady Two-Dimensional Heat Conduction}\\[0.4cm]
+    \Large
+    A Second-Order Finite-Volume Solver with Iterative and Direct Methods
+}
+
+\author{
+    \Large Arian Shahnoori
+}
+
+\date{\today}
+
+%================================================
+\begin{document}
+%================================================
+
+\maketitle
+\thispagestyle{empty}
+
+\vspace{0.8cm}
+
+\begin{abstract}
+A two-dimensional finite-volume solver is developed for the steady-state heat conduction equation on a square domain. The Laplace equation is discretized using a second-order cell-centered finite-volume formulation on a structured Cartesian grid. Four solution methods are implemented: Point Gauss-Seidel, Successive Over-Relaxation (SOR), Line-SOR, and a fully implicit direct method. The numerical solutions are verified through comparison with the analytical solution. Computational studies investigate convergence behavior, iteration counts, and CPU time across different relaxation factors and mesh resolutions. Post-processing techniques, including temperature contours, error distributions, line-cut comparisons, and residual convergence histories, are employed to assess numerical accuracy and compare the computational performance of the solution methods.
+\end{abstract}
+
+\vspace{0.5cm}
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Problem & Steady Two-Dimensional Heat Conduction\\
+Governing Equation & Laplace Equation\\
+Discretization & Cell-Centered Finite Volume Method\\
+Spatial Accuracy & Second Order\\
+Solution Methods & Point Gauss-Seidel, SOR, Line-SOR, Direct\\
+Programming Language & Python\\
+Verification & Analytical Solution\\
+Performance Evaluation & Convergence and CPU-Time Comparisons\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\newpage
+
+\tableofcontents
+
+\newpage
+
+\input{sections/01_introduction}
+
+\input{sections/02_governing_equation}
+
+\input{sections/03_Finite_Volume_Discretization}
+
+\input{sections/04_Numerical_Solution_Method}
+
+\input{sections/05_Computational_Implementation}
+
+\input{sections/06_Results_and_Discussion}
+
+\input{sections/07_Conclusion}
+
+\appendix
+
+\input{sections/appendices/A_computational_setup}
+
+\end{document}

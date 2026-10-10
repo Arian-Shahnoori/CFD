@@ -1,0 +1,30 @@
+\section{Computational Setup}
+
+All numerical simulations were performed on a single workstation. The hardware configuration is reported to ensure reproducibility of the computational results; however, absolute CPU timing values are system-dependent and should be interpreted accordingly.
+
+\subsection{Hardware Configuration}
+
+The simulations were executed on the following system:
+
+\begin{itemize}
+    \item Processor: Intel(R) Core(TM) i7-8550U CPU
+    \item Number of physical cores: 4
+    \item Logical cores: 8
+    \item Memory (RAM): 15.88 GB
+    \item Architecture: AMD64
+\end{itemize}
+
+\subsection{Software Environment}
+
+\begin{itemize}
+    \item Programming language: Python 3.x
+    \item Numerical libraries: NumPy
+    \item Visualization: Matplotlib
+    \item Operating system: Windows
+\end{itemize}
+
+\subsection{Timing Methodology}
+
+Execution time was measured using a high-resolution wall-clock timer based on \texttt{time.perf\_counter()}, which provides monotonic timing suitable for performance evaluation of iterative solvers.
+
+Since computational performance depends strongly on hardware architecture, CPU frequency scaling, and system load, timing results are reported for reference only and are not intended for direct cross-machine comparison.
