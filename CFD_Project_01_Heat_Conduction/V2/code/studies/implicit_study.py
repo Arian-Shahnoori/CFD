@@ -145,7 +145,7 @@ def run_implicit_study():
     T_numerical = implicit_solutions[N][1:N + 1, 1:N + 1]
     T_exact = exact_solution(X, Y)
 
-    error = T_numerical - T_exact
+    error = - T_numerical + T_exact
 
     L2_error = np.sqrt(np.mean(error**2))
     maximum_error = np.max(np.abs(error))
