@@ -5,11 +5,11 @@ A modular Python implementation for solving the one-dimensional linear advection
 ## Quick links
 
 - [Entry point: `main.py`](CFD_Project_02_1D_Advection/code/main.py)
-- [Spatial and temporal solver components](src/solvers/)
-- [Shared analysis and visualization utilities](src/)
-- [Numerical studies](studies/)
-- [Generated results](results/figures/)
-- [LaTeX report and report figures](report/latex/)
+- [Spatial and temporal solver components](CFD_Project_02_1D_Advection/code/src/solvers/)
+- [Shared analysis and visualization utilities](CFD_Project_02_1D_Advection/code/src/)
+- [Numerical studies](CFD_Project_02_1D_Advection/code/studies/)
+- [Generated results](CFD_Project_02_1D_Advection/code/results/figures/)
+- [LaTeX report and report figures](CFD_Project_02_1D_Advection/code/report/latex/)
 
 ## Overview
 
@@ -106,7 +106,7 @@ When a target CFL number is specified, the solver selects a time-step count suff
         └── figures/
 ```
 
-`main.py` is the entry point for the configured studies. The reusable numerical methods are implemented under [`src/`](src/), while [`studies/`](studies/) contains the experiments and their parameter choices. Plotting routines are centralised in [`src/visualization.py`](src/visualization.py) to avoid duplicating figure-generation code across studies. The LaTeX report and its figures are in [`report/latex/`](report/latex/).
+`main.py` is the entry point for the configured studies. The reusable numerical methods are implemented under [`src/`](CFD_Project_02_1D_Advection/code/src/), while [`studies/`](CFD_Project_02_1D_Advection/code/studies/) contains the experiments and their parameter choices. Plotting routines are centralised in [`src/visualization.py`](CFD_Project_02_1D_Advection/code/src/visualization.py) to avoid duplicating figure-generation code across studies. The LaTeX report and its figures are in [`report/latex/`](CFD_Project_02_1D_Advection/code/report/latex/).
 
 ## Requirements
 
