@@ -4,7 +4,7 @@ A modular Python implementation for solving the one-dimensional linear advection
 
 ## Quick links
 
-- [Entry point: `main.py`](main.py)
+- [Entry point: `main.py`](CFD_Project_02_1D_Advection/code/main.py)
 - [Spatial and temporal solver components](src/solvers/)
 - [Shared analysis and visualization utilities](src/)
 - [Numerical studies](studies/)
@@ -168,7 +168,7 @@ $$
 
 The sampled stability search gave approximately 0.6933; this small difference is due to the finite resolution of the numerical search grid.
 
-[![RK4 second-order upwind Fourier stability map](report/latex/figures/rk4_2ndupwind_stability.png)](report/latex/figures/rk4_2ndupwind_stability.png)
+[![RK4 second-order upwind Fourier stability map](CFD_Project_02_1D_Advection/report/latex/figures/rk4_2ndupwind_stability.png)](report/latex/figures/rk4_2ndupwind_stability.png)
 
 ### 4. RK2 and RK4: accuracy comparison
 
@@ -176,7 +176,7 @@ On a fixed grid of 40 control volumes, reducing the time step decreased the RK2 
 
 In a grid-refinement study at a fixed CFL number of $C=0.05$, both methods gave an observed overall convergence order of approximately **1.9368**. Although RK4 has fourth-order temporal accuracy, the overall rate remained close to second order because both methods use a second-order spatial discretization.
 
-[![RK2 and RK4 grid-convergence comparison](report/latex/figures/rk2_rk4_convergence.png)](report/latex/figures/rk2_rk4_convergence.png)
+[![RK2 and RK4 grid-convergence comparison](CFD_Project_02_1D_Advection/report/latex/figures/rk2_rk4_convergence.png)](report/latex/figures/rk2_rk4_convergence.png)
 
 ## Stability-analysis scope
 
