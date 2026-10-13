@@ -1,0 +1,148 @@
+%================================================
+% Appendix A: RK2 with second-order upwind
+%================================================
+
+\section{Fourier Stability Analysis of RK2 with Second-Order Upwind}
+\label{app:rk2-upwind-stability}
+
+\subsection{Derivation of the Spatial Eigenvalue}
+\label{app:rk2-upwind-eigenvalue}
+
+The second-order upwind spatial discretization of the one-dimensional linear advection equation gives the semi-discrete equation
+\begin{equation}
+    \frac{dT_j}{dt}
+    =-\frac{u}{2\Delta x}
+    \left(3T_j-4T_{j-1}+T_{j-2}\right),
+    \label{eq:app-rk2-upwind-semidiscrete}
+\end{equation}
+where $j$ denotes the cell index. To analyse the stability of the interior spatial operator, consider a Fourier mode of the form
+\begin{equation}
+    T_j(t)=\hat{T}(t)e^{\mathrm{i}j\phi},
+    \label{eq:app-rk2-upwind-fourier-mode}
+\end{equation}
+where $\hat{T}(t)$ is the mode amplitude, $\phi$ is the dimensionless wave number, and $\mathrm{i}=\sqrt{-1}$. The neighbouring values are
+\begin{equation}
+    T_{j-1}=T_j e^{-\mathrm{i}\phi},
+    \qquad
+    T_{j-2}=T_j e^{-2\mathrm{i}\phi}.
+    \label{eq:app-rk2-upwind-neighbours}
+\end{equation}
+Substituting these expressions into the semi-discrete equation yields
+\begin{equation}
+    \frac{d\hat{T}}{dt}=\lambda(\phi)\hat{T},
+    \label{eq:app-rk2-upwind-mode-ode}
+\end{equation}
+where the spatial eigenvalue is
+\begin{equation}
+    \boxed{
+    \lambda(\phi)=-\frac{u}{2\Delta x}
+    \left(3-4e^{-\mathrm{i}\phi}+e^{-2\mathrm{i}\phi}\right)
+    }.
+    \label{eq:app-rk2-upwind-lambda}
+\end{equation}
+
+Introducing the Courant number
+\begin{equation}
+    C=\frac{u\Delta t}{\Delta x},
+    \label{eq:app-rk2-courant}
+\end{equation}
+and defining the dimensionless eigenvalue $z=\lambda\Delta t=x+\mathrm{i}y$, we obtain
+\begin{equation}
+    \boxed{
+    z=-\frac{C}{2}
+    \left(3-4e^{-\mathrm{i}\phi}+e^{-2\mathrm{i}\phi}\right)
+    }.
+    \label{eq:app-rk2-upwind-z}
+\end{equation}
+Separating the real and imaginary parts gives
+\begin{align}
+    x&=-\frac{C}{2}
+    \left(3-4\cos\phi+\cos 2\phi\right) \notag\\
+     &=-C(1-\cos\phi)^2,
+    \label{eq:app-rk2-upwind-x}
+\end{align}
+and
+\begin{equation}
+    \boxed{
+    y=\frac{C}{2}\left(-4\sin\phi+\sin 2\phi\right)
+    }.
+    \label{eq:app-rk2-upwind-y}
+\end{equation}
+These expressions describe the location of each spatial Fourier mode in the complex $z$-plane as the Courant number and wave number vary.
+
+\subsection{RK2 Amplification Factor}
+\label{app:rk2-upwind-amplification}
+
+The explicit midpoint RK2 method applied to the scalar equation
+\begin{equation}
+    \frac{d\hat{T}}{dt}=\lambda\hat{T}
+\end{equation}
+uses the intermediate stage
+\begin{equation}
+    \hat{T}^{n+1/2}
+    =\hat{T}^n+\frac{\Delta t}{2}\lambda\hat{T}^n,
+    \label{eq:app-rk2-stage-one}
+\end{equation}
+followed by
+\begin{equation}
+    \hat{T}^{n+1}
+    =\hat{T}^n+\Delta t\,\lambda\hat{T}^{n+1/2}.
+    \label{eq:app-rk2-stage-two}
+\end{equation}
+Substituting the intermediate stage into the final update gives
+\begin{equation}
+    \hat{T}^{n+1}
+    =\left(1+\lambda\Delta t
+    +\frac{(\lambda\Delta t)^2}{2}\right)\hat{T}^n.
+\end{equation}
+Therefore, the numerical amplification factor is
+\begin{equation}
+    \boxed{G_{\mathrm{RK2}}(z)=1+z+\frac{z^2}{2}}.
+    \label{eq:app-rk2-amplification}
+\end{equation}
+With $z=x+\mathrm{i}y$, its real and imaginary components are
+\begin{align}
+    \operatorname{Re}(G_{\mathrm{RK2}})
+    &=1+x+\frac{x^2-y^2}{2},
+    \label{eq:app-rk2-amplification-real}\\
+    \operatorname{Im}(G_{\mathrm{RK2}})
+    &=y(1+x).
+    \label{eq:app-rk2-amplification-imag}
+\end{align}
+The absolute-stability condition is $|G_{\mathrm{RK2}}|\leq 1$. Expressed in terms of $x$ and $y$, this becomes
+\begin{equation}
+    \boxed{
+    \left(1+x+\frac{x^2-y^2}{2}\right)^2
+    +y^2(1+x)^2\leq 1
+    }.
+    \label{eq:app-rk2-stability-condition}
+\end{equation}
+The boundary of the absolute-stability region is defined by $|G_{\mathrm{RK2}}|=1$. Evaluating this condition over the Fourier phases and Courant numbers produces the stability diagram presented in the main text.
+
+\subsection{Limiting Courant Number}
+\label{app:rk2-upwind-cfl-limit}
+
+The limiting Courant number can be obtained by examining the highest-frequency mode, $\phi=\pi$. Substituting this phase into the eigenvalue expression gives
+\begin{equation}
+    z=-\frac{C}{2}(3+4+1)=-4C.
+    \label{eq:app-rk2-high-frequency-z}
+\end{equation}
+The corresponding RK2 amplification factor is
+\begin{equation}
+    G_{\mathrm{RK2}}(-4C)=1-4C+8C^2.
+    \label{eq:app-rk2-high-frequency-g}
+\end{equation}
+For $C\geq 0$, this expression is positive. Therefore, the stability condition reduces to
+\begin{equation}
+    1-4C+8C^2\leq 1.
+\end{equation}
+Rearranging gives
+\begin{equation}
+    4C(2C-1)\leq 0.
+\end{equation}
+Hence, the highest-frequency mode satisfies the stability condition for
+\begin{equation}
+    \boxed{0\leq C\leq 0.5}.
+    \label{eq:app-rk2-cfl-limit}
+\end{equation}
+Evaluation of the complete Fourier spectrum confirms that this mode determines the limiting Courant number for the second-order upwind spatial operator combined with explicit midpoint RK2. Thus, the theoretical maximum stable Courant number is $C_{\max}=0.5$, consistent with the numerical stability study reported in Section~\ref{subsec:rk2-stability-verification}.

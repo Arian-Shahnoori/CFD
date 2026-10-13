@@ -1,0 +1,105 @@
+\section{Numerical Implementation and Code Architecture}
+\label{sec:numerical-implementation}
+
+\subsection{Modular Software Structure}
+\label{subsec:modular-structure}
+
+The numerical solver was implemented in Python using a modular structure that separates the numerical algorithms from the experimental setup and visualization. The main objective is to make the implementation easier to understand, verify, and extend. In particular, different spatial discretization schemes and time-integration methods can be combined without duplicating the complete solver.
+
+The source code is organized into modules according to their responsibilities. The \texttt{spatial\_operators.py} module contains the spatially discretized right-hand sides for the second-order upwind and second-order central schemes. The \texttt{time\_integrators.py} module implements the explicit midpoint Runge--Kutta method (RK2) and the classical fourth-order Runge--Kutta method (RK4). The \texttt{solver.py} module coordinates these components by defining the computational grid, determining the time-step size, initializing the solution, and advancing it to the final time.
+
+Additional modules provide the analytical solution, error calculations, stability analysis, and visualization functions. Individual numerical experiments are implemented as separate scripts in the \texttt{studies} directory. Each study specifies its parameters, calls the solver, and analyzes and plots the results. Finally, \texttt{main.py} serves as the entry point for executing the selected studies.
+
+This design separates the implementation of numerical methods from the setup of individual experiments. For example, changing the time integrator from RK2 to RK4 does not require rewriting the spatial discretization or the time-marching loop.
+
+\subsection{Separation of Spatial and Temporal Operators}
+\label{subsec:operator-separation}
+
+Following spatial discretization, the governing equation is converted into a system of ordinary differential equations (ODEs),
+\begin{equation}
+    \frac{d\mathbf{T}}{dt} = \mathbf{R}(\mathbf{T},t),
+    \label{eq:semi-discrete-system}
+\end{equation}
+where $\mathbf{T}$ is the vector of cell-centred solution values and $\mathbf{R}$ denotes the spatially discretized right-hand side. The temporal integration method advances this system in time, while the spatial operator determines the right-hand-side value for a given solution state.
+
+In the implementation, the spatial operator is selected using the \texttt{spatial\_scheme} parameter. A Python dictionary associates each scheme name with its corresponding function:
+
+\begin{verbatim}
+spatial_operators = {
+    "2nd_upwind": rhs_second_order_upwind,
+    "2nd_central": rhs_second_order_central,
+}
+
+spatial_operator = spatial_operators[spatial_scheme]
+\end{verbatim}
+
+For example, if \texttt{spatial\_scheme} is \texttt{"2nd\_upwind"}, the variable \texttt{spatial\_operator} refers to \texttt{rhs\_second\_order\_upwind}. If \texttt{"2nd\_central"} is selected, it instead refers to \texttt{rhs\_second\_order\_central}. The dictionary stores references to functions, not the numerical values returned by those functions. Assigning a function to another variable therefore provides another name through which the same function can be called; it does not execute or modify the function.
+
+The time integrator is selected in the same way:
+
+\begin{verbatim}
+time_integrators = {
+    "rk2": rk2_midpoint_step,
+    "rk4": rk4_classical_step,
+}
+
+time_stepper = time_integrators[temporal_scheme]
+\end{verbatim}
+
+Here, \texttt{time\_stepper} refers to the function associated with the selected temporal scheme. Both integrators use the same interface: the current solution, current time, time-step size, and a function that evaluates the right-hand side. This common interface lets the solver switch between RK2 and RK4 without changing the time-marching loop.
+
+\subsection{Passing the Right-Hand-Side Function to the Time Integrator}
+\label{subsec:rhs-function-passing}
+
+A central feature of the implementation is that a function is passed as an argument to another function. In Python, functions are objects that can be assigned to variables, passed to other functions, and called later. Such an object is commonly described as a \emph{callable}.
+
+The selected spatial operator requires the solution state, time, grid spacing, and transport velocity. To expose it through the common interface expected by the time integrators, the solver defines a nested function:
+
+\begin{verbatim}
+def rhs(state, time):
+    return spatial_operator(state, time, dx, u)
+\end{verbatim}
+
+The variables \texttt{state} and \texttt{time} are parameters of \texttt{rhs}; their values are supplied each time the function is called. The variables \texttt{dx}, \texttt{u}, and \texttt{spatial\_operator} are defined in the surrounding \texttt{solve\_advection} function and are accessible within the nested function. This allows \texttt{rhs} to present a consistent two-argument interface while forwarding the necessary grid and physical parameters to the selected spatial operator.
+
+The function is then passed to the chosen time integrator:
+
+\begin{verbatim}
+T = time_stepper(T, t_n, dt, rhs)
+\end{verbatim}
+
+At this stage, \texttt{time\_stepper} refers to either \texttt{rk2\_midpoint\_step} or \texttt{rk4\_classical\_step}. Since both integrators accept the same argument structure, the call remains valid when the temporal scheme is changed.
+
+For the explicit midpoint RK2 method, the supplied right-hand-side function is evaluated twice:
+
+\begin{verbatim}
+k1 = rhs(T, t_n)
+
+T_half = T + 0.5 * dt * k1
+
+k2 = rhs(T_half, t_n + 0.5 * dt)
+\end{verbatim}
+
+In the first evaluation, \texttt{state} receives the current solution $\mathbf{T}^{n}$ and \texttt{time} receives $t_n$. In the second evaluation, they receive the intermediate solution
+\begin{equation}
+    \mathbf{T}^{n+1/2} = \mathbf{T}^{n}
+    + \frac{\Delta t}{2}\,\mathbf{R}(\mathbf{T}^{n},t_n)
+\end{equation}
+and the midpoint time $t_n+\Delta t/2$, respectively. Each call to \texttt{rhs} forwards the current state and time to the selected spatial operator, together with the fixed values of $\Delta x$ and $u$. The same spatial discretization can therefore be evaluated at intermediate states without embedding its implementation inside the time integrator.
+
+The classical RK4 method follows the same principle, but evaluates the right-hand side four times at its prescribed intermediate states and times. Thus, the time integrator controls when and how often the right-hand side is evaluated, while the spatial operator controls how each right-hand-side value is computed.
+
+This function-passing approach keeps temporal integration independent of the details of spatial discretization. It also allows the available spatial and temporal schemes to be combined through the solver's input parameters.
+
+\subsection{Time Marching and Numerical Experiments}
+\label{subsec:time-marching-experiments}
+
+The computational domain is divided into uniformly spaced control volumes, and the solution is initialized using the zero initial condition, $T(x,0)=0$. The time-step size can be determined either from a prescribed Courant number or from an explicitly specified number of time steps.
+
+When the Courant number is prescribed, the solver calculates a time-step limit from the requested value and selects an integer number of steps sufficient to reach the final time. When the number of steps is specified directly, the time-step size is calculated so that the simulation reaches the requested final time exactly.
+
+The solution is then advanced iteratively. At each time step, the selected time integrator receives the current solution, current time, time-step size, and right-hand-side function. The updated solution becomes the starting state for the next step, and this process continues until the final time is reached.
+
+The numerical experiments are defined separately from the solver. Each study specifies the discretization methods and simulation parameters relevant to its objective, such as grid resolution, Courant number, final time, or number of time steps. The computed results are then compared with the analytical solution, assessed using the selected error measures, and visualized using shared plotting functions.
+
+This organization supports systematic comparisons of numerical accuracy and stability while keeping the underlying solver reusable across different experiments.

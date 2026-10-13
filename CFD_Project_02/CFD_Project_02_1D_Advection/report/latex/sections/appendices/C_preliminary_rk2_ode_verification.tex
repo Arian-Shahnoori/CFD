@@ -1,0 +1,110 @@
+%================================================
+% Appendix C: Preliminary ODE verification of RK2
+%================================================
+
+\section{Preliminary ODE Verification of RK2}
+\label{app:preliminary-rk2-ode}
+
+\subsection{Governing Equation and Analytical Solution}
+\label{app:rk2-ode-analytical-solution}
+
+Before solving the advection equation, the time-integration method was tested using the nonhomogeneous ordinary differential equation
+\begin{equation}
+    \frac{dv}{dt}=-v+\sin t,
+    \qquad v(0)=1.
+    \label{eq:app-rk2-ode}
+\end{equation}
+The equation can be written as
+\begin{equation}
+    \frac{dv}{dt}+v=\sin t.
+\end{equation}
+Solving this first-order linear ODE gives the analytical solution
+\begin{equation}
+    \boxed{
+    v(t)=\frac{\sin t-\cos t}{2}+\frac{3}{2}e^{-t}
+    }.
+    \label{eq:app-rk2-ode-exact}
+\end{equation}
+This solution satisfies the initial condition $v(0)=1$ and provides an exact reference for evaluating the temporal discretization independently of spatial error.
+
+\subsection{Explicit Midpoint RK2 Formulation}
+\label{app:rk2-ode-formulation}
+
+Applying the explicit midpoint RK2 method to the ODE gives the intermediate estimate
+\begin{equation}
+    v^{n+1/2}=v^n+\frac{\Delta t}{2}
+    \left(-v^n+\sin t_n\right),
+    \label{eq:app-rk2-ode-midpoint}
+\end{equation}
+followed by the full time-step update
+\begin{equation}
+    v^{n+1}=v^n+\Delta t
+    \left[-v^{n+1/2}
+    +\sin\left(t_n+\frac{\Delta t}{2}\right)\right].
+    \label{eq:app-rk2-ode-update}
+\end{equation}
+Starting from $v^0=1$, these equations are applied successively until the prescribed final time is reached. At each step, the numerical solution is compared with the analytical solution evaluated at the same time.
+
+The error measure used in the original implementation is the mean absolute error over the time points,
+\begin{equation}
+    E_{\mathrm{MAE}}=\frac{1}{N+1}
+    \sum_{n=0}^{N}\left|v^n-v(t_n)\right|,
+    \label{eq:app-rk2-ode-mae}
+\end{equation}
+where $N$ is the number of time steps. This is a normalized discrete $L^1$-type error measure rather than an unnormalized integral norm.
+
+\subsection{Temporal Stability}
+\label{app:rk2-ode-stability}
+
+To examine stability independently of the forcing term, consider the homogeneous equation
+\begin{equation}
+    \frac{dv}{dt}=-v.
+    \label{eq:app-rk2-ode-homogeneous}
+\end{equation}
+Applying the two RK2 stages yields
+\begin{equation}
+    v^{n+1}=\left(1-\Delta t+\frac{\Delta t^2}{2}\right)v^n.
+    \label{eq:app-rk2-ode-homogeneous-update}
+\end{equation}
+The amplification factor is therefore
+\begin{equation}
+    G=1-\Delta t+\frac{\Delta t^2}{2}.
+    \label{eq:app-rk2-ode-homogeneous-g}
+\end{equation}
+For positive $\Delta t$, this expression is positive. The stability condition $|G|\leq 1$ consequently reduces to
+\begin{equation}
+    1-\Delta t+\frac{\Delta t^2}{2}\leq 1,
+\end{equation}
+which gives
+\begin{equation}
+    \boxed{0<\Delta t\leq 2}.
+    \label{eq:app-rk2-ode-stability-limit}
+\end{equation}
+Thus, the homogeneous ODE remains absolutely stable for time steps up to $\Delta t=2$, with the upper limit corresponding to marginal stability.
+
+\subsection{Temporal Convergence}
+\label{app:rk2-ode-convergence}
+
+The temporal convergence study was performed using successively refined time steps,
+\begin{equation}
+    \Delta t\in\left\{
+    \frac{1}{5},\frac{1}{10},\frac{1}{20},
+    \frac{1}{40},\frac{1}{80}
+    \right\}.
+    \label{eq:app-rk2-ode-timestep-set}
+\end{equation}
+At each resolution, the numerical and analytical solutions were evaluated at the same time points, and the mean absolute error was calculated. The errors were plotted against the number of time steps on logarithmic axes.
+
+For a method of temporal order $p$, the error is expected to scale as
+\begin{equation}
+    E\propto (\Delta t)^p.
+    \label{eq:app-rk2-ode-error-dt}
+\end{equation}
+Since the number of time steps is proportional to $1/\Delta t$ for a fixed final time, this relationship can also be written as
+\begin{equation}
+    E\propto N^{-p}.
+    \label{eq:app-rk2-ode-error-n}
+\end{equation}
+A log--log plot of error against the number of time steps should therefore have a slope of approximately $-p$. The observed slope was consistent with second-order temporal convergence, supporting the expected accuracy of the explicit midpoint RK2 method. The original study also reported a mean absolute error of approximately $0.002$ for $\Delta t=1/5$.
+
+This preliminary verification provides a reference for the subsequent PDE simulations, where temporal discretization is combined with spatial discretization and additional errors arise from the finite-volume approximation.

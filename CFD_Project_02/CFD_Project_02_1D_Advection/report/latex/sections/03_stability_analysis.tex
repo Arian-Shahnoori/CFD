@@ -1,0 +1,164 @@
+%================================================
+\section{Stability Analysis}
+\label{sec:stability-analysis}
+%================================================
+
+Numerical stability is a fundamental property of a time-marching scheme. Even when the governing equation has a bounded solution, discretization errors can grow with each time step and eventually dominate the numerical solution. For the linear advection equation, stability depends on the combination of spatial discretization and time integration, as well as on the selected time-step size.
+
+The Courant number is defined as
+\begin{equation}
+    C = \frac{u\Delta t}{\Delta x},
+    \label{eq:courant-number}
+\end{equation}
+where $u$ is the transport velocity, $\Delta t$ is the time-step size, and $\Delta x$ is the cell width. This dimensionless number relates temporal and spatial resolution and provides a convenient parameter for analysing stability.
+
+To investigate the stability of the numerical schemes, Fourier-mode analysis is applied to their spatially discretized equations. For a uniform grid and a constant-coefficient interior spatial operator, the solution is represented by Fourier modes of the form
+\begin{equation}
+    T_i(t) = \widehat{T}(t)e^{\mathrm{i}i\phi},
+    \label{eq:fourier-mode}
+\end{equation}
+where $\phi$ is the dimensionless wave number and $\mathrm{i}=\sqrt{-1}$. Substitution into the semi-discrete equation transforms the spatial operator into a scalar eigenvalue problem. The time-integration method then determines how the amplitude of each mode changes between consecutive time levels.
+
+Defining $z=\lambda\Delta t$, where $\lambda$ is the spatial eigenvalue, the numerical evolution of a mode can be written as
+\begin{equation}
+    \widehat{T}^{n+1} = G(z)\widehat{T}^{n},
+    \label{eq:amplification-evolution}
+\end{equation}
+where $G(z)$ is the numerical amplification factor. The absolute-stability condition is
+\begin{equation}
+    \boxed{|G(z)|\leq 1}.
+    \label{eq:absolute-stability}
+\end{equation}
+If the amplification factor exceeds unity for a mode, that mode grows numerically. The following subsections examine this condition for second-order upwind discretization combined with RK2 and RK4, and for second-order central discretization combined with RK2.
+
+\subsection{RK2 with Second-Order Upwind Discretization}
+\label{subsec:rk2-upwind-stability}
+
+For the second-order upwind scheme, the semi-discrete equation for an interior cell is
+\begin{equation}
+    \frac{dT_i}{dt}
+    = -\frac{u}{2\Delta x}
+    \left(3T_i-4T_{i-1}+T_{i-2}\right).
+    \label{eq:upwind2-semidiscrete}
+\end{equation}
+Substituting a Fourier mode into this equation gives the dimensionless eigenvalue
+\begin{equation}
+    \boxed{z=-\frac{C}{2}
+    \left(3-4e^{-\mathrm{i}\phi}+e^{-2\mathrm{i}\phi}\right)}.
+    \label{eq:upwind2-rk2-z}
+\end{equation}
+
+For the explicit midpoint RK2 method, the amplification factor is
+\begin{equation}
+    G_{\mathrm{RK2}}(z)=1+z+\frac{z^2}{2}.
+    \label{eq:rk2-amplification}
+\end{equation}
+The stability region is determined by evaluating $|G_{\mathrm{RK2}}|$ over a range of Fourier phases and Courant numbers. The boundary $|G_{\mathrm{RK2}}|=1$ separates stable and unstable modes.
+
+The limiting Courant number can be identified by examining the highest-frequency mode, $\phi=\pi$. For this mode,
+\begin{equation}
+    z=-4C,
+    \label{eq:upwind2-high-frequency-z}
+\end{equation}
+and the amplification factor becomes
+\begin{equation}
+    G_{\mathrm{RK2}}=1-4C+8C^2.
+    \label{eq:rk2-high-frequency-amplification}
+\end{equation}
+Applying the absolute-stability condition gives
+\begin{equation}
+    |1-4C+8C^2|\leq 1,
+\end{equation}
+which, for $C\geq 0$, yields
+\begin{equation}
+    \boxed{0\leq C\leq 0.5}.
+    \label{eq:rk2-upwind-cfl-limit}
+\end{equation}
+
+The full Fourier-mode analysis confirms that $C_{\max}=0.5$ is the limiting Courant number for this spatial discretization combined with RK2. At this limit, the highest-frequency mode is marginally stable, while a larger Courant number produces at least one unstable mode. The resulting stability diagram provides a theoretical reference for selecting the time step. Its predictions are compared with numerical simulations in Section~\ref{sec:results-discussion}.
+
+\subsection{RK2 with Second-Order Central Discretization}
+\label{subsec:rk2-central-stability}
+
+The second-order central spatial discretization gives the semi-discrete equation
+\begin{equation}
+    \frac{dT_i}{dt}
+    = -\frac{u}{2\Delta x}\left(T_{i+1}-T_{i-1}\right).
+    \label{eq:central2-semidiscrete}
+\end{equation}
+Substitution of a Fourier mode gives the spatial eigenvalue
+\begin{equation}
+    \lambda(\phi)=-\mathrm{i}\frac{u}{\Delta x}\sin\phi.
+    \label{eq:central2-eigenvalue}
+\end{equation}
+Consequently, the dimensionless eigenvalue is purely imaginary:
+\begin{equation}
+    z=\lambda\Delta t=-\mathrm{i}C\sin\phi=\mathrm{i}y,
+    \qquad y=-C\sin\phi.
+    \label{eq:central2-z}
+\end{equation}
+
+Using the RK2 amplification factor in Equation~\eqref{eq:rk2-amplification} and substituting $z=\mathrm{i}y$ gives
+\begin{equation}
+    G_{\mathrm{RK2}}=1-\frac{y^2}{2}+\mathrm{i}y.
+    \label{eq:central2-rk2-amplification}
+\end{equation}
+Its magnitude satisfies
+\begin{align}
+    |G_{\mathrm{RK2}}|^2
+    &=\left(1-\frac{y^2}{2}\right)^2+y^2 \\
+    &=1+\frac{y^4}{4}.
+    \label{eq:central2-amplification-magnitude}
+\end{align}
+Therefore,
+\begin{equation}
+    \boxed{|G_{\mathrm{RK2}}|^2
+    =1+\frac{C^4\sin^4\phi}{4}}.
+    \label{eq:central2-rk2-instability}
+\end{equation}
+
+For any nonzero mode with $\sin\phi\neq 0$, the amplification factor exceeds unity for every positive Courant number. Thus, the combination of second-order central differencing and explicit midpoint RK2 does not satisfy the absolute-stability condition for all Fourier modes at any positive time-step size.
+
+This result differs from the upwind scheme, whose spatial eigenvalues include a dissipative component that can be balanced against the time integrator's stability properties. For the central scheme, reducing the Courant number decreases the amplification of individual modes but does not eliminate the underlying instability.
+
+The numerical consequences are examined in the results section. In particular, computed solutions can remain close to the analytical solution over a finite simulation interval even when the method is theoretically unstable. Such finite-time agreement should not be interpreted as proof of stability.
+
+\subsection{Classical RK4 with Second-Order Upwind Discretization}
+\label{subsec:rk4-upwind-stability}
+
+The classical fourth-order Runge--Kutta method (RK4) is analysed using the same second-order upwind spatial discretization. Consequently, the dimensionless spatial eigenvalue remains
+\begin{equation}
+    z=-\frac{C}{2}
+    \left(3-4e^{-\mathrm{i}\phi}+e^{-2\mathrm{i}\phi}\right).
+    \label{eq:upwind2-rk4-z}
+\end{equation}
+The difference lies in the temporal amplification factor. For classical RK4,
+\begin{equation}
+    G_{\mathrm{RK4}}(z)
+    =1+z+\frac{z^2}{2}+\frac{z^3}{6}+\frac{z^4}{24}.
+    \label{eq:rk4-amplification}
+\end{equation}
+The stability condition is again
+\begin{equation}
+    \boxed{|G_{\mathrm{RK4}}(z)|\leq 1}.
+    \label{eq:rk4-absolute-stability}
+\end{equation}
+Evaluating this condition over a range of Fourier phases and Courant numbers produces the RK4 stability diagram. The limiting Courant number is approximately
+\begin{equation}
+    \boxed{C_{\max}\approx 0.6963}.
+    \label{eq:rk4-upwind-cfl-limit}
+\end{equation}
+
+This limit can be established by considering the highest-frequency mode, $\phi=\pi$, for which $z=-4C$. Along the negative real axis, the classical RK4 stability polynomial remains within its absolute-stability region down to approximately $z=-2.7853$. Thus,
+\begin{equation}
+    C_{\max}\approx\frac{2.7853}{4}\approx 0.6963.
+    \label{eq:rk4-cfl-calculation}
+\end{equation}
+The full Fourier-mode analysis confirms that this mode determines the limiting Courant number for the second-order upwind interior stencil combined with classical RK4.
+
+Compared with RK2, classical RK4 permits a larger stable Courant number for this spatial discretization. Nevertheless, the stability limit does not mean that the largest allowable time step necessarily provides the most accurate solution. Accuracy and stability are distinct considerations, and a suitable time step must account for both.
+
+Overall, the stability analysis demonstrates that the time-integration method cannot be assessed independently of the spatial discretization. The second-order upwind scheme combined with RK2 is stable for $C\leq 0.5$, while its combination with classical RK4 permits a limiting Courant number of approximately $0.6963$. In contrast, central differencing combined with explicit midpoint RK2 fails the absolute-stability condition for nonzero Fourier modes at every positive Courant number. These theoretical findings provide the basis for interpreting the numerical behaviour examined in the next section.
+
+\paragraph{Applicability of the Fourier Stability Analysis.}
+The Fourier stability analysis presented in this section assumes periodic boundary conditions, whereas the advection problem considered in this study has a prescribed time-dependent inlet condition. Therefore, the derived CFL limits characterize the stability of the interior spatial discretization combined with the selected time integrator, rather than providing a complete stability proof for the full numerical problem. The boundary treatment may also influence the stability of the complete discretized system. To assess the applicability of these predictions, the theoretical results were compared with numerical tests using the actual solver and its prescribed inlet condition. For the RK2 scheme combined with second-order upwind discretization, the solution remained bounded at CFL numbers of (0.4) and (0.5), whereas instability was observed at approximately (0.5714), consistent with the predicted interior stability limit of ($C_{\max}=0.5$). This agreement supports the use of the Fourier analysis as a practical stability criterion for the present problem, although it does not establish a general stability guarantee for the non-periodic system.

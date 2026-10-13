@@ -1,0 +1,88 @@
+\documentclass[11pt,a4paper]{article}
+
+%------------------------------------------------
+% Packages and formatting
+%------------------------------------------------
+
+\input{packages}
+
+%------------------------------------------------
+% Document information
+%------------------------------------------------
+
+\title{
+    \Huge\textbf{One-Dimensional Linear Advection}\\[0.4cm]
+    \Large
+    Finite-Volume Discretization, Explicit Time Integration, and Stability Analysis
+}
+
+\author{
+    \Large Arian Shahnoori
+}
+
+\date{\today}
+
+%================================================
+\begin{document}
+%================================================
+
+\maketitle
+\thispagestyle{empty}
+
+\vspace{0.8cm}
+
+\begin{abstract}
+A numerical solver is developed for the one-dimensional linear advection equation with constant transport velocity. The equation is discretized in space using a finite-volume formulation, with first-order upwind, second-order upwind, and second-order central-difference schemes. Time integration is performed using the explicit midpoint Runge--Kutta method (RK2) and the classical fourth-order Runge--Kutta method (RK4). Numerical solutions are verified against the analytical solution, and grid-refinement studies are used to assess spatial accuracy and the observed convergence order. Fourier-mode analysis is used to investigate the linear stability of selected space--time discretizations and to derive their limiting Courant--Friedrichs--Lewy (CFL) numbers. Further computational studies examine the effects of spatial discretization, CFL number, and temporal integration order, including the role of spatial-error dominance in the observed convergence behavior.
+\end{abstract}
+
+\vspace{0.5cm}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{p{0.29\textwidth} p{0.61\textwidth}}
+\toprule
+Problem & One-Dimensional Linear Advection \\
+Governing Equation & First-Order Linear Advection Equation \\
+Transport Velocity & Constant, $u=2$ \\
+Spatial Discretization & Finite-Volume Method \\
+Spatial Schemes & First-Order Upwind, Second-Order Upwind, Second-Order Central \\
+Time Integration & Explicit Midpoint RK2, Classical RK4 \\
+Stability Analysis & Fourier-Mode (Von Neumann) Analysis \\
+Verification & Analytical Solution and Grid Refinement \\
+Programming Language & Python \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\newpage
+\tableofcontents
+\newpage
+
+%================================================
+% Main sections
+%================================================
+
+\input{sections/01_introduction}
+
+\input{sections/02_numerical_methodology}
+
+\input{sections/03_stability_analysis}
+
+\input{sections/04_results_and_discussion}
+
+\input{sections/05_conclusions}
+
+%================================================
+% Appendices
+%================================================
+
+\appendix
+
+\input{sections/appendices/A_rk2_second_order_upwind_stability}
+
+\input{sections/appendices/B_rk4_second_order_upwind_stability}
+
+% Optional appendix: include this file only if the preliminary ODE test is retained.
+\input{sections/appendices/C_preliminary_rk2_ode_verification}
+
+\end{document}

@@ -1,0 +1,130 @@
+%================================================
+% Appendix B: RK4 with second-order upwind
+%================================================
+
+\section{Fourier Stability Analysis of Classical RK4 with Second-Order Upwind}
+\label{app:rk4-upwind-stability}
+
+\subsection{Spatial Eigenvalue}
+\label{app:rk4-upwind-eigenvalue}
+
+The spatial discretization remains the second-order upwind scheme,
+\begin{equation}
+    \frac{dT_j}{dt}
+    =-\frac{u}{2\Delta x}
+    \left(3T_j-4T_{j-1}+T_{j-2}\right).
+    \label{eq:app-rk4-upwind-semidiscrete}
+\end{equation}
+Using a Fourier mode $T_j(t)=\hat{T}(t)e^{\mathrm{i}j\phi}$ gives
+\begin{equation}
+    \lambda(\phi)=-\frac{u}{2\Delta x}
+    \left(3-4e^{-\mathrm{i}\phi}+e^{-2\mathrm{i}\phi}\right).
+    \label{eq:app-rk4-upwind-lambda}
+\end{equation}
+With $C=u\Delta t/\Delta x$, the dimensionless eigenvalue becomes
+\begin{equation}
+    \boxed{
+    z=\lambda\Delta t=-\frac{C}{2}
+    \left(3-4e^{-\mathrm{i}\phi}+e^{-2\mathrm{i}\phi}\right)
+    }.
+    \label{eq:app-rk4-upwind-z}
+\end{equation}
+Writing $z=x+\mathrm{i}y$, the real and imaginary parts are
+\begin{equation}
+    \boxed{
+    x=-\frac{C}{2}\left(3-4\cos\phi+\cos 2\phi\right)
+    }.
+    \label{eq:app-rk4-upwind-x}
+\end{equation}
+and
+\begin{equation}
+    \boxed{
+    y=\frac{C}{2}\left(-4\sin\phi+\sin 2\phi\right)
+    }.
+    \label{eq:app-rk4-upwind-y}
+\end{equation}
+
+\subsection{RK4 Amplification Factor}
+\label{app:rk4-upwind-amplification}
+
+The classical four-stage Runge--Kutta method has the amplification polynomial
+\begin{equation}
+    \boxed{
+    G_{\mathrm{RK4}}(z)=1+z+\frac{z^2}{2}
+    +\frac{z^3}{6}+\frac{z^4}{24}
+    }.
+    \label{eq:app-rk4-amplification}
+\end{equation}
+For $z=x+\mathrm{i}y$, write the amplification factor as
+\begin{equation}
+    G_{\mathrm{RK4}}=A+\mathrm{i}B.
+\end{equation}
+Expanding the polynomial and separating its real and imaginary parts gives
+\begin{equation}
+    \boxed{
+    \begin{aligned}
+    A={}&1+x+\frac{x^2-y^2}{2}\\
+      &+\frac{x^3-3xy^2}{6}\\
+      &+\frac{x^4-6x^2y^2+y^4}{24}.
+    \end{aligned}
+    }
+    \label{eq:app-rk4-amplification-real}
+\end{equation}
+and
+\begin{equation}
+    \boxed{
+    \begin{aligned}
+    B={}&y+xy+\frac{3x^2y-y^3}{6}\\
+      &+\frac{4x^3y-4xy^3}{24}.
+    \end{aligned}
+    }
+    \label{eq:app-rk4-amplification-imag}
+\end{equation}
+The magnitude of the amplification factor is therefore
+\begin{equation}
+    |G_{\mathrm{RK4}}|=\sqrt{A^2+B^2}.
+    \label{eq:app-rk4-amplification-magnitude}
+\end{equation}
+The absolute-stability condition becomes
+\begin{equation}
+    \boxed{A^2+B^2\leq 1}.
+    \label{eq:app-rk4-stability-condition}
+\end{equation}
+The stability diagram is constructed by evaluating this expression over a range of Fourier phases and Courant numbers. The contour $|G_{\mathrm{RK4}}|=1$ separates stable and unstable individual modes, while additional contours, such as $|G_{\mathrm{RK4}}|=0.5$, indicate levels of attenuation within the stable region.
+
+\subsection{Limiting Courant Number}
+\label{app:rk4-upwind-cfl-limit}
+
+For the highest-frequency mode, $\phi=\pi$, the dimensionless eigenvalue reduces to
+\begin{equation}
+    z=-4C.
+    \label{eq:app-rk4-high-frequency-z}
+\end{equation}
+Defining $a=4C$, the amplification factor along the negative real axis is
+\begin{equation}
+    G_{\mathrm{RK4}}(-a)
+    =1-a+\frac{a^2}{2}-\frac{a^3}{6}+\frac{a^4}{24}.
+    \label{eq:app-rk4-negative-real-axis}
+\end{equation}
+The boundary of the stable interval on the negative real axis occurs at the first nonzero positive value of $a$ for which $G_{\mathrm{RK4}}(-a)=1$. Thus,
+\begin{equation}
+    -a+\frac{a^2}{2}-\frac{a^3}{6}+\frac{a^4}{24}=0.
+\end{equation}
+Multiplying by 24 and factoring out $a$ gives
+\begin{equation}
+    a\left(a^3-4a^2+12a-24\right)=0.
+\end{equation}
+The first nonzero positive root is approximately
+\begin{equation}
+    a_{\max}\approx 2.7853.
+\end{equation}
+Consequently,
+\begin{equation}
+    C_{\max}=\frac{a_{\max}}{4}\approx 0.6963.
+\end{equation}
+The complete Fourier-mode analysis confirms that the highest-frequency mode determines the limiting Courant number for the second-order upwind spatial operator combined with classical RK4. Hence,
+\begin{equation}
+    \boxed{C_{\max}\approx 0.6963}.
+    \label{eq:app-rk4-cfl-limit}
+\end{equation}
+This theoretical limit agrees with the sampled stability diagram, subject to the finite resolution of the numerical parameter grid.

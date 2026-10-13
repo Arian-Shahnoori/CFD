@@ -1,0 +1,247 @@
+%================================================
+\section{Results and Discussion}
+\label{sec:results-discussion}
+%================================================
+
+% Figure helper: image paths are resolved relative to the main document.
+% If an image is not found, a placeholder is shown instead of stopping compilation.
+% The preamble (packages.tex) must load graphicx and booktabs.
+\newcommand{\resultfigure}[4]{%
+    \begin{figure}[!htbp]
+        \centering
+        \IfFileExists{#1}{%
+            \includegraphics[width=#2\textwidth]{#1}%
+        }{%
+            \fbox{%
+                \parbox[c][0.18\textheight][c]{0.78\textwidth}{%
+                    \centering
+                    \textbf{Figure file not found}\\[4pt]
+                    \texttt{\detokenize{#1}}\\[4pt]
+                    Place this image at the path above, relative to \texttt{main.tex}.
+                }%
+            }%
+        }%
+        \caption{#3}
+        \label{#4}
+    \end{figure}%
+}
+
+\subsection{Grid-Convergence Verification of the Second-Order Upwind Scheme}
+\label{subsec:upwind-grid-convergence}
+
+The spatial accuracy of the second-order upwind scheme combined with explicit midpoint RK2 was assessed using a grid-refinement study. The simulations were performed up to $t=1$, with a fixed Courant number of $C=0.25$. Four spatial resolutions, consisting of 20, 40, 80, and 160 control volumes, were considered. At each resolution, the numerical solution was compared with the analytical solution, and the discrete RMS $L^2$ error was calculated.
+
+The numerical results are summarized in Table~\ref{tab:upwind-grid-convergence}.
+
+\begin{table}[!htbp]
+    \centering
+    \caption{Grid-convergence study for second-order upwind discretization with RK2 at $t=1$ and $C=0.25$.}
+    \label{tab:upwind-grid-convergence}
+    \small
+    \begin{tabular}{r r r r r}
+        \toprule
+        Control volumes & $\Delta t$ & Time steps & CFL & RMS $L^2$ error \\
+        \midrule
+        20  & $6.2500\times10^{-3}$ & 160  & 0.25 & $1.025270\times10^{-2}$ \\
+        40  & $3.1250\times10^{-3}$ & 320  & 0.25 & $2.781684\times10^{-3}$ \\
+        80  & $1.5625\times10^{-3}$ & 640  & 0.25 & $7.200084\times10^{-4}$ \\
+        160 & $7.8125\times10^{-4}$ & 1280 & 0.25 & $1.828248\times10^{-4}$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The error decreases consistently as the grid is refined. Doubling the number of control volumes approximately reduces the error by a factor of four, as expected for second-order convergence. The log--log regression gives an observed convergence order of $1.9378$, which is close to the theoretically expected order of two. The convergence behaviour is illustrated in Figure~\ref{fig:upwind-convergence}.
+
+\resultfigure
+    {figures/rk2_2ndupwind_convergence.png}
+    {0.80}
+    {Grid convergence of the RMS $L^2$ error for RK2 combined with second-order upwind discretization at a fixed CFL number of $0.25$.}
+    {fig:upwind-convergence}
+
+Since the Courant number is held fixed, both spatial and temporal resolutions change simultaneously. Therefore, this experiment assesses convergence of the combined numerical method rather than isolating spatial error alone. Nevertheless, the observed rate is consistent with the expected second-order accuracy.
+
+\subsection{Numerical Verification of the RK2 Stability Limit}
+\label{subsec:rk2-stability-verification}
+
+The theoretical stability limit obtained from Fourier analysis was compared with numerical simulations using 40 control volumes and a final time of $t=0.25$. Three time-step counts were considered: $N=50$, $N=40$, and $N=35$. The corresponding time-step sizes and Courant numbers are shown in Table~\ref{tab:rk2-stability-verification}.
+
+\begin{table}[!htbp]
+    \centering
+    \caption{Time-step sizes and actual Courant numbers for the RK2 stability-verification study at $t=0.25$.}
+    \label{tab:rk2-stability-verification}
+    \small
+    \begin{tabular}{r r r}
+        \toprule
+        Time steps & $\Delta t$ & Actual CFL \\
+        \midrule
+        50 & $5.000000\times10^{-3}$ & 0.4000 \\
+        40 & $6.250000\times10^{-3}$ & 0.5000 \\
+        35 & $7.142857\times10^{-3}$ & 0.5714 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The Fourier stability map in Figure~\ref{fig:rk2-upwind-stability} identifies $C_{\max}=0.5$ as the limiting Courant number for second-order upwind discretization combined with RK2. The corresponding numerical solutions are compared with the analytical solution in Figure~\ref{fig:rk2-upwind-stability-solutions}.
+
+\resultfigure
+    {figures/rk2_2ndupwind_stability.png}
+    {0.82}
+    {Fourier stability map for RK2 combined with second-order upwind discretization. The stability boundary is defined by $|G|=1$, and the limiting Courant number is $C_{\max}=0.5$.}
+    {fig:rk2-upwind-stability}
+
+\resultfigure
+    {figures/rk2_2ndupwind_solution.png}
+    {0.82}
+    {Comparison of the numerical and analytical solutions for the RK2 stability-verification cases at $t=0.25$, using 40 control volumes and actual CFL numbers of $0.4$, $0.5$, and approximately $0.5714$.}
+    {fig:rk2-upwind-stability-solutions}
+
+The $N=50$ case, corresponding to $C=0.4$, remains within the predicted stable range. The $N=40$ case lies exactly at the theoretical stability boundary and remains bounded over the tested simulation interval. In contrast, the $N=35$ case exceeds the stability limit, and the numerical solution exhibits unstable behaviour.
+
+These observations are consistent with the Fourier stability analysis. The result at $C=0.5$ represents a limiting case rather than a robust operating condition. In practical simulations, a Courant number below the theoretical limit provides a safety margin against numerical instability.
+
+\subsection{Grid Refinement with Second-Order Central Discretization}
+\label{subsec:central-grid-convergence}
+
+The grid-refinement procedure was also applied to the second-order central scheme combined with RK2, using a final time of $t=1$, a Courant number of $C=0.25$, and 20 and 40 control volumes. The results are given in Table~\ref{tab:central-grid-convergence}.
+
+\begin{table}[!htbp]
+    \centering
+    \caption{Grid-refinement study for second-order central discretization with RK2 at $t=1$ and $C=0.25$.}
+    \label{tab:central-grid-convergence}
+    \small
+    \begin{tabular}{r r r r r}
+        \toprule
+        Control volumes & $\Delta t$ & Time steps & CFL & RMS $L^2$ error \\
+        \midrule
+        20 & $6.250000\times10^{-3}$ & 160 & 0.25 & $8.540923\times10^{-3}$ \\
+        40 & $3.125000\times10^{-3}$ & 320 & 0.25 & $2.868139\times10^{-3}$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The errors decrease as the grid is refined. The log--log fit gives an observed convergence order of $1.5743$, as illustrated in Figure~\ref{fig:central-convergence}.
+
+\resultfigure
+    {figures/rk2_2ndcentral_convergence.png}
+    {0.80}
+    {Grid-refinement results for RK2 combined with second-order central discretization at a fixed CFL number of $0.25$.}
+    {fig:central-convergence}
+
+Although this result indicates an improvement in accuracy with grid refinement, the measured order is below two. Furthermore, the estimate is based on only two resolutions, so it should not be considered a conclusive verification of second-order convergence. The theoretical stability analysis also shows that central differencing combined with explicit midpoint RK2 fails the absolute-stability condition for nonzero purely imaginary Fourier modes. Consequently, the observed error reduction must be interpreted as finite-resolution behaviour rather than proof of stable convergence.
+
+\subsection{Comparison of Central and Upwind Schemes at Different CFL Values}
+\label{subsec:central-upwind-comparison}
+
+The second-order central and second-order upwind schemes were compared using 40 control volumes at $t=1$, with requested Courant numbers of $0.7$, $0.4$, and $0.1$. The actual CFL values were approximately $0.7018$, $0.4000$, and $0.1000$, respectively. These cases were selected to examine the predicted stability properties of the two schemes under different time-step restrictions.
+
+For the second-order upwind scheme, the stability analysis predicts a limiting Courant number of $0.5$. Accordingly, the $C\approx0.7$ case lies outside its stable range, whereas the $C=0.4$ and $C=0.1$ cases are within it. For central differencing combined with RK2, the Fourier analysis predicts amplification of nonzero modes for every positive Courant number, although the growth may be less apparent over a finite simulation.
+
+The numerical and analytical solution comparisons are shown in Figures~\ref{fig:scheme-comparison-cfl07}--\ref{fig:scheme-comparison-cfl01}.
+
+\resultfigure
+    {figures/rk2_2ndupwind_2ndcentral_CFL0.7_solution.png}
+    {0.85}
+    {Intended comparison of second-order upwind and second-order central discretizations with RK2 at an actual CFL number of approximately $0.7018$.}
+    {fig:scheme-comparison-cfl07}
+
+\resultfigure
+    {figures/rk2_2ndupwind_2ndcentral_CFL0.4_solution.png}
+    {0.85}
+    {Intended comparison of second-order upwind and second-order central discretizations with RK2 at a CFL number of $0.4$.}
+    {fig:scheme-comparison-cfl04}
+
+\resultfigure
+    {figures/rk2_2ndupwind_2ndcentral_CFL0.1_solution.png}
+    {0.85}
+    {Intended comparison of second-order upwind and second-order central discretizations with RK2 at a CFL number of $0.1$.}
+    {fig:scheme-comparison-cfl01}
+
+\paragraph{Diagnostic consistency check.}
+The numerical diagnostics from the current implementation require verification before a definitive comparison can be reported. At all three CFL values, the logged RMS errors, maximum errors, and maximum solution magnitudes are identical for the two schemes. For example, at $C=0.4$, both are reported to have an RMS error of $2.912544\times10^{-3}$ and a maximum absolute solution value of $0.996774$. Identical results are also reported for the other two cases, including the $C\approx0.7$ case.
+
+These results do not establish that the two schemes behave identically. Their spatial operators and theoretical stability properties are different. The scheme selection and right-hand-side implementation should therefore be checked, and the simulations and figures regenerated before drawing conclusions from this comparison. Until this issue is resolved, Figures~\ref{fig:scheme-comparison-cfl07}--\ref{fig:scheme-comparison-cfl01} should be treated as provisional outputs rather than evidence supporting a quantitative comparison.
+
+\subsection{Stability of Classical RK4 with Second-Order Upwind Discretization}
+\label{subsec:rk4-stability-results}
+
+The stability of classical RK4 combined with second-order upwind spatial discretization was examined by evaluating its amplification factor over a range of Fourier phases and Courant numbers. The resulting stability map is shown in Figure~\ref{fig:rk4-upwind-stability}.
+
+\resultfigure
+    {figures/rk4_2ndupwind_stability.png}
+    {0.82}
+    {Fourier stability map for classical RK4 combined with second-order upwind discretization.}
+    {fig:rk4-upwind-stability}
+
+The theoretical limiting Courant number is approximately $C_{\max}=0.6963$. In the numerical calculation, 601 Courant-number points were sampled over the interval $0\leq C\leq2$. The largest sampled Courant number satisfying the all-mode stability condition was $0.6933$.
+
+The small difference between these values is attributable to the finite resolution of the sampled Courant-number grid: the numerical search can identify only the largest stable value among the discrete samples. Increasing the sampling resolution would provide a closer numerical approximation to the theoretical limit.
+
+The analysis shows that classical RK4 permits a higher limiting Courant number than RK2 for the same second-order upwind spatial discretization. This theoretical result guides the choice of time step for the accuracy comparison. It does not, however, imply that the largest stable Courant number necessarily yields the most accurate solution.
+
+\subsection{Effect of Temporal Integration Order on Overall Accuracy}
+\label{subsec:temporal-order-accuracy}
+
+The accuracy of midpoint RK2 and classical RK4 was compared using the same second-order upwind spatial discretization. Two experiments were performed to distinguish temporal error from the overall error associated with the spatial and temporal discretizations.
+
+\subsubsection{Temporal Refinement on a Fixed Grid}
+\label{subsubsec:temporal-refinement-fixed-grid}
+
+The first experiment used a fixed grid of 40 control volumes and progressively increased the number of time steps from 200 to 3200. The results are presented in Table~\ref{tab:temporal-refinement-fixed-grid}.
+
+\begin{table}[!htbp]
+    \centering
+    \caption{Temporal refinement on a fixed grid of 40 control volumes using second-order upwind spatial discretization.}
+    \label{tab:temporal-refinement-fixed-grid}
+    \footnotesize
+    \setlength{\tabcolsep}{4pt}
+    \begin{tabular}{r r r r r}
+        \toprule
+        Time steps & $\Delta t$ & CFL & \shortstack{RK2 RMS \\$L^2$ error} & \shortstack{RK4 RMS \\$L^2$ error} \\
+        \midrule
+        200  & $5.000000\times10^{-3}$ & 0.400 & $2.912544\times10^{-3}$ & $2.698545\times10^{-3}$ \\
+        400  & $2.500000\times10^{-3}$ & 0.200 & $2.751668\times10^{-3}$ & $2.698561\times10^{-3}$ \\
+        800  & $1.250000\times10^{-3}$ & 0.100 & $2.711795\times10^{-3}$ & $2.698562\times10^{-3}$ \\
+        1600 & $6.250000\times10^{-4}$ & 0.050 & $2.701865\times10^{-3}$ & $2.698562\times10^{-3}$ \\
+        3200 & $3.125000\times10^{-4}$ & 0.025 & $2.699387\times10^{-3}$ & $2.698562\times10^{-3}$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The RK2 error decreases with temporal refinement, approaching the nearly constant error obtained using RK4. The RK4 error remains approximately $2.6986\times10^{-3}$ across the tested time steps, indicating that its temporal integration error is negligible relative to the error associated with the fixed spatial grid.
+
+As the RK2 time-step size decreases, its temporal error becomes progressively less significant, and the total error approaches the same level. Thus, further reducing the time-step size yields diminishing improvements because the spatial discretization error becomes dominant.
+
+\subsubsection{Grid Refinement at a Fixed Courant Number}
+\label{subsubsec:grid-refinement-fixed-cfl}
+
+The second experiment examined grid refinement using a constant Courant number of $C=0.05$. This small value reduces the temporal contribution to the error, allowing the overall convergence behaviour to be examined. Both time integrators were tested using the same spatial resolutions and time steps. The results are given in Table~\ref{tab:grid-refinement-fixed-cfl}.
+
+\begin{table}[!htbp]
+    \centering
+    \caption{Grid refinement at a fixed Courant number of $C=0.05$ for second-order upwind discretization with RK2 and RK4.}
+    \label{tab:grid-refinement-fixed-cfl}
+    \footnotesize
+    \setlength{\tabcolsep}{3.5pt}
+    \begin{tabular}{r r r r r r}
+        \toprule
+        Control volumes & Time steps & $\Delta t$ & CFL & \shortstack{RK2 RMS \\$L^2$ error} & \shortstack{RK4 RMS \\$L^2$ error} \\
+        \midrule
+        20  & 800  & $1.250000\times10^{-3}$ & 0.05 & $9.948121\times10^{-3}$ & $9.935563\times10^{-3}$ \\
+        40  & 1600 & $6.250000\times10^{-4}$ & 0.05 & $2.701865\times10^{-3}$ & $2.698562\times10^{-3}$ \\
+        80  & 3200 & $3.125000\times10^{-4}$ & 0.05 & $6.997847\times10^{-4}$ & $6.989454\times10^{-4}$ \\
+        160 & 6400 & $1.562500\times10^{-4}$ & 0.05 & $1.777493\times10^{-4}$ & $1.775383\times10^{-4}$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The observed convergence orders are $1.9368$ for both RK2 and RK4, consistent with second-order convergence of the combined numerical solution. The convergence curves are shown in Figure~\ref{fig:rk2-rk4-convergence}.
+
+\resultfigure
+    {figures/rk2_rk4_convergence.png}
+    {0.82}
+    {Grid-convergence comparison of RK2 and classical RK4 with second-order upwind spatial discretization at a fixed CFL number of $0.05$.}
+    {fig:rk2-rk4-convergence}
+
+The results demonstrate that increasing the temporal order does not necessarily increase the overall convergence order of a numerical solution. Although classical RK4 has fourth-order temporal accuracy, both methods exhibit approximately second-order overall convergence because they use the same second-order spatial discretization. When the temporal contribution to the error is small, the spatial error dominates the total error and determines the observed convergence rate.
+
+Taken together, the two experiments distinguish the formal accuracy of a time integrator from that of the complete numerical method. Temporal refinement at a fixed grid reveals the error floor associated with spatial discretization, while grid refinement at a sufficiently small Courant number confirms that both methods approach the expected second-order overall convergence rate.

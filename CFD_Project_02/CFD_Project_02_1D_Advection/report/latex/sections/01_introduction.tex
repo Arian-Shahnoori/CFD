@@ -1,0 +1,60 @@
+%================================================
+\section{Introduction and Problem Definition}
+%================================================
+
+\subsection{Governing Equation}
+\label{subsec:governing_equation}
+
+The classical one-dimensional wave equation is a second-order hyperbolic partial differential equation (PDE):
+\begin{equation}
+    \frac{\partial^2 T}{\partial t^2}
+    = c^2\frac{\partial^2 T}{\partial x^2},
+    \label{eq:classical_wave}
+\end{equation}
+where $T$ is the dependent variable, $x$ is the spatial coordinate, $t$ is time, and $c$ is the wave propagation speed. The equation is second-order because its highest derivatives are of second order, and hyperbolic because it describes disturbances that propagate through the domain at finite speeds.
+
+The present study focuses on the first-order linear advection equation,
+\begin{equation}
+    \frac{\partial T}{\partial t}
+    + u\frac{\partial T}{\partial x} = 0,
+    \label{eq:advection}
+\end{equation}
+where $u$ is a constant transport velocity. This equation describes the transport of a quantity $T$ through a domain without changing its amplitude along a characteristic. It is also known as the linear convection equation. It is first-order because it contains only first-order derivatives and linear because the dependent variable and its derivatives appear linearly.
+
+Although both equations describe wave propagation, they represent different mathematical models. The second-order wave equation describes phenomena such as acoustic wave propagation, whereas the first-order advection equation models the transport of a quantity at a prescribed velocity. In this project, the advection equation is the governing equation used to investigate the accuracy and stability of numerical discretization methods.
+
+Since the advection equation contains both temporal and spatial derivatives, its numerical solution requires discretization in both time and space. Before solving the PDE, a time-dependent ordinary differential equation (ODE) is also considered to verify the time-integration method independently of spatial discretization.
+
+\subsection{Computational Domain and Analytical Solution}
+\label{subsec:domain_analytical_solution}
+
+The computational domain is one-dimensional, with spatial extent
+\begin{equation}
+    0 \leq x \leq L, \qquad L=1.
+    \label{eq:domain}
+\end{equation}
+The transport velocity is constant and positive, $u=2$, indicating that the transported quantity moves from left to right. The governing equation is subject to the initial condition
+\begin{equation}
+    T(x,0)=0, \qquad 0\leq x\leq 1,
+    \label{eq:initial_condition}
+\end{equation}
+and the time-dependent inlet boundary condition
+\begin{equation}
+    T(0,t)=\sin(2\pi t), \qquad t\geq 0.
+    \label{eq:inlet_boundary_condition}
+\end{equation}
+The initial field is zero throughout the domain, while the inlet introduces a sinusoidal signal that propagates downstream with velocity $u$.
+
+For these conditions, the analytical solution is
+\begin{equation}
+    T(x,t)=
+    \begin{cases}
+        \sin\!\left[2\pi\left(t-\dfrac{x}{u}\right)\right],
+        & x\leq ut,\\[6pt]
+        0, & x>ut.
+    \end{cases}
+    \label{eq:analytical_solution}
+\end{equation}
+The condition $x=ut$ describes the advancing front of the transported signal. Ahead of this front, the quantity remains zero because the inlet disturbance has not yet reached that part of the domain. Behind the front, the solution corresponds to the sinusoidal inlet signal evaluated at the time when it entered the domain.
+
+This analytical solution serves as a reference for assessing the accuracy of the numerical results. The study compares different spatial discretization schemes and time-integration methods, examines their stability as a function of the Courant number, and investigates how spatial and temporal discretization errors affect the overall numerical solution.

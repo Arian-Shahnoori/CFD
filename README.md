@@ -1,52 +1,91 @@
-# Steady Two-Dimensional Heat Conduction — Finite-Volume Solver
+# Computational Fluid Dynamics and Numerical Methods Projects
 
-A Python project for solving the steady-state heat conduction equation on a square domain using the finite-volume method. The project documents the development of a numerical solver, from the original master's implementation to a modular framework for comparing iterative and direct solution methods.
+This repository collects numerical modelling projects focused on the implementation, verification, and analysis of computational methods for fluid mechanics and heat transfer. The emphasis is on understanding how governing equations are discretized and solved, and on assessing numerical accuracy, convergence, stability, and computational behaviour against analytical solutions.
 
-## Problem Description
+The projects use Python for numerical implementation and LaTeX for technical reporting.
 
-The governing equation is the two-dimensional Laplace equation,
+## Projects
 
-$$
-\nabla^2 T = 0,
-$$
+### Project 01 — Steady Two-Dimensional Heat Conduction
 
-discretized using a second-order, cell-centered finite-volume formulation on a structured Cartesian grid. Dirichlet boundary conditions are imposed using ghost cells, and the numerical solutions are verified against an analytical solution.
+**Problem:** Solve the steady two-dimensional Laplace equation on a square domain using a cell-centred finite-volume method.
 
-The project investigates numerical solution methods, convergence behavior, solution accuracy, and computational cost.
+\[
+\nabla^2 T = 0.
+\]
 
-## Repository Structure
+The discretization uses a structured Cartesian grid and Dirichlet boundary conditions. Numerical solutions are verified against an analytical solution. The project documents the development from the original master's implementation to a modular solver framework and compares iterative and direct solution methods.
 
-### Original MSc Implementation
+**Methods implemented in V2:**
 
-[`MSc_Original/`](MSc_Original/)
+- **Point Gauss–Seidel:** point-wise iterative solution.
+- **Successive Over-Relaxation (SOR):** point-wise iteration with a relaxation factor.
+- **Line-SOR:** line-based solution of temperature corrections using a tridiagonal system.
+- **Fully implicit direct method:** assembly and direct solution of the discrete linear system.
 
-Contains the original Python code and report developed during my master's studies. These files are preserved in their original form to document the initial implementation and provide a reference for subsequent development.
+The repository preserves the original implementation and subsequent versions so the evolution of the code and report remains traceable.
 
-### V1 — Point Gauss-Seidel and LaTeX Report
+![Implicit solution: temperature contours for the steady heat-conduction problem](CFD_Project_01/CFD_Project_01_Heat_Conduction/V2/report/latex/figures/implicit_temperature_contours.png)
 
-[`V1/`](V1/)
+*Representative result: temperature contours obtained using the fully implicit solution method.*
 
-Contains the initial Point Gauss-Seidel implementation and the revised English project report developed in LaTeX. This version focuses on documenting the numerical formulation, implementation, analytical verification, and results in a structured technical report. The code retains the original, non-modular organization.
+[Open the Project 01 folder](CFD_Project_01/CFD_Project_01_Heat_Conduction/)
 
-### V2 — Modular Solver Framework
+### Project 02 — One-Dimensional Linear Advection
 
-[`V2/`](V2/)
+**Problem:** Solve the one-dimensional linear advection equation with a prescribed time-dependent inlet condition.
 
-Extends the project into a modular Python codebase, separating numerical solvers, shared computational functions, study definitions, and visualization.
+\[
+\frac{\partial T}{\partial t} + u\frac{\partial T}{\partial x}=0,
+\qquad u=2.
+\]
 
-Four solution methods are implemented:
+The solver separates spatial operators from time integrators, allowing numerical schemes to be combined without duplicating the time-marching algorithm.
 
-* **Point Gauss-Seidel:** Sequential point-wise iterative solution.
-* **Successive Over-Relaxation (SOR):** Point-wise iteration with a relaxation factor.
-* **Line-SOR:** Line-based solution of temperature corrections using a tridiagonal coefficient matrix.
-* **Fully implicit direct method:** Assembly and direct solution of the discrete linear system.
+**Methods and studies:**
 
-V2 also includes verification against the analytical solution, mesh-size studies, solver convergence comparisons, and CPU-time evaluations.
+- **Spatial discretization:** second-order upwind and second-order central schemes.
+- **Time integration:** explicit midpoint Runge–Kutta (RK2) and classical fourth-order Runge–Kutta (RK4).
+- **Verification:** comparison with the analytical solution, grid-refinement studies, and time-step refinement.
+- **Stability analysis:** Fourier-mode analysis of the amplification factors and their dependence on the Courant number.
+- **Error analysis:** RMS discrete \(L^2\) errors and observed convergence orders.
 
-The updated report is available here: [CFD_Project_01_Heat_Conduction_V2.pdf](V2/report/CFD_Project_01_Heat_Conduction_V2.pdf).
+For the second-order upwind scheme, the analysis gives a limiting Courant number of \(C_{\max}=0.5\) with RK2 and approximately \(C_{\max}=0.6963\) with RK4. The analysis also shows that second-order central differencing combined with explicit midpoint RK2 does not satisfy the absolute-stability condition for nonzero Fourier modes at any positive Courant number.
 
-## Purpose
+![Numerical solution of the one-dimensional advection equation using RK2 and second-order upwind discretization](CFD_Project_02/CFD_Project_02_1D_Advection/report/latex/figures/rk2_2ndupwind_solution.png)
 
-The main objective is to develop a clear and extensible numerical implementation while examining how the choice of solution method affects convergence and computational efficiency. Keeping the original implementation and both subsequent versions makes the development process traceable and preserves the distinction between the original work, the report-focused revision, and the modular solver framework.
+*Representative result: numerical and analytical solution profiles for the second-order upwind scheme advanced with RK2.*
 
-For implementation details and instructions for running the code, see the README in the corresponding version directory.
+[Open the Project 02 folder](CFD_Project_02/CFD_Project_02_1D_Advection/)
+
+## Repository Layout
+
+```text
+.
+├── README.md
+├── CFD_Project_01/
+│   └── CFD_Project_01_Heat_Conduction/
+│       └── V2/
+│           └── report/
+│               └── latex/
+│                   └── figures/
+│                       └── implicit_temperature_contours.png
+└── CFD_Project_02/
+    └── CFD_Project_02_1D_Advection/
+        └── report/
+            └── latex/
+                └── figures/
+                    └── rk2_2ndupwind_solution.png
+```
+
+Each project folder contains its own implementation and report materials. Refer to the README and documentation within each project for version-specific details and instructions for running the code or compiling the report.
+
+## Main Topics
+
+- Finite-volume discretization of partial differential equations
+- Iterative and direct numerical solution methods
+- Modular scientific Python programming
+- Analytical verification and grid-convergence studies
+- Runge–Kutta time integration
+- Fourier stability analysis and Courant-number limits
+- Error estimation, visualization, and technical reporting
