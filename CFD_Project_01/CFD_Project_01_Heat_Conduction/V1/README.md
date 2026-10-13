@@ -76,7 +76,7 @@ $$
 
 ### Temperature Distribution
 
-![Temperature Field](CFD_Project_01/CFD_Project_01_Heat_Conduction/report/latex/figures/temperature_contours.png)
+![Temperature Field](report/latex/figures/temperature_contours.png)
 
 The numerical solution shows excellent agreement with the analytical solution throughout the computational domain.
 
