@@ -106,7 +106,7 @@ When a target CFL number is specified, the solver selects a time-step count suff
         └── figures/
 ```
 
-`main.py` is the entry point for the configured studies. The reusable numerical methods are implemented under [`src/`](CFD_Project_02_1D_Advection/code/src/), while [`studies/`](CFD_Project_02_1D_Advection/code/studies/) contains the experiments and their parameter choices. Plotting routines are centralised in [`src/visualization.py`](CFD_Project_02_1D_Advection/code/src/visualization.py) to avoid duplicating figure-generation code across studies. The LaTeX report and its figures are in [`report/latex/`](CFD_Project_02_1D_Advection/code/report/latex/).
+`main.py` is the entry point for the configured studies. The reusable numerical methods are implemented under [`src/`](CFD_Project_02_1D_Advection/code/src/), while [`studies/`](CFD_Project_02_1D_Advection/code/studies/) contains the experiments and their parameter choices. Plotting routines are centralised in [`src/visualization.py`](CFD_Project_02_1D_Advection/code/src/visualization.py) to avoid duplicating figure-generation code across studies. The LaTeX report and its figures are in [`report/latex/`](CFD_Project_02_1D_Advection/report/latex/).
 
 ## Requirements
 
