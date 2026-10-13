@@ -126,7 +126,7 @@ This runs the studies configured in `main.py`. Figures are saved under `results/
 
 At a fixed target CFL number of \(C=0.25\), the grid was refined from 20 to 160 control volumes. The observed convergence order was **1.9378**, close to the expected second-order rate.
 
-![RK2 and second-order upwind grid convergence](figures/rk2_2ndupwind_convergence.png)
+![RK2 and second-order upwind grid convergence](CFD_Project_02_1D_Advection/figures/rk2_2ndupwind_convergence.png)
 
 ### 2. RK2 with second-order upwind: stability
 
@@ -138,7 +138,7 @@ C_{\max}=0.5.
 
 Tests with the full solver at a final time of \(t=0.25\) were consistent with this prediction: the solution remained bounded at CFL values of 0.4 and 0.5, while instability appeared at approximately 0.5714. The case at the theoretical limit is marginal and should not be treated as a robust operating point.
 
-![RK2 second-order upwind Fourier stability map](figures/rk2_2ndupwind_stability.png)
+![RK2 second-order upwind Fourier stability map](CFD_Project_02_1D_Advection/figures/rk2_2ndupwind_stability.png)
 
 ### 3. Classical RK4 with second-order upwind: stability
 
@@ -150,7 +150,7 @@ C_{\max}\approx 0.6963.
 
 The sampled stability search gave approximately 0.6933; this small difference is due to the finite resolution of the numerical search grid.
 
-![RK4 second-order upwind Fourier stability map](figures/rk4_2ndupwind_stability.png)
+![RK4 second-order upwind Fourier stability map](CFD_Project_02_1D_Advection/figures/rk4_2ndupwind_stability.png)
 
 ### 4. RK2 and RK4: accuracy comparison
 
@@ -158,7 +158,7 @@ On a fixed grid of 40 control volumes, reducing the time step decreased the RK2 
 
 In a grid-refinement study at a fixed CFL number of 0.05, both methods gave an observed overall convergence order of approximately **1.9368**. Although RK4 has fourth-order temporal accuracy, the overall rate remained close to second order because both methods use a second-order spatial discretization.
 
-![RK2 and RK4 grid-convergence comparison](figures/rk2_rk4_convergence.png)
+![RK2 and RK4 grid-convergence comparison](CFD_Project_02_1D_Advection/figures/rk2_rk4_convergence.png)
 
 ## Stability-analysis scope
 
