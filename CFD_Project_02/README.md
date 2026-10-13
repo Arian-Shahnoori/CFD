@@ -9,7 +9,7 @@ A modular Python implementation for solving the one-dimensional linear advection
 - [Shared analysis and visualization utilities](CFD_Project_02_1D_Advection/code/src/)
 - [Numerical studies](CFD_Project_02_1D_Advection/code/studies/)
 - [Generated results](CFD_Project_02_1D_Advection/code/results/figures/)
-- [LaTeX report and report figures](CFD_Project_02_1D_Advection/code/report/latex/)
+- [LaTeX report and report figures](CFD_Project_02_1D_Advection/report/latex/)
 
 ## Overview
 
