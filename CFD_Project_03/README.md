@@ -1,16 +1,56 @@
-# Two-Dimensional Channel-Flow Heat Transfer
+# Finite-Volume Solver for the 2D Channel-Flow Energy Equation
 
-A Python implementation of a cell-centred finite-volume solver for the two-dimensional energy equation in a channel flow. The project examines the effects of convection, thermal diffusion, and viscous dissipation on the steady-state temperature field. It also compares numerical methods for advancing the discretized equation toward steady state.
+A modular Python implementation for solving the two-dimensional energy equation in a channel flow using finite-volume spatial discretization and pseudo-time integration. The project compares approximate factorization, sparse direct implicit, and explicit Runge–Kutta methods. It also examines numerical stability, solver performance, and the effects of convection, thermal diffusion, and viscous dissipation on the steady-state temperature field.
 
-## 1. Project Overview
+## Quick links
 
-The computational domain is a rectangular channel with dimensions:
+- [Source code](CFD_03_2D_Energy_Equation/code/src/)
+- [Solver implementations](src/solvers/)
+- [Initialization and boundary conditions](src/initialization.py)
+- [Visualization utilities](src/visualization/)
+- [Solver-comparison results](results/solver_comparison/)
+- [Parameter-study results](results/parameter_study/)
+- [LaTeX report](main.tex)
+- [Report sections](sections/)
+
+## Overview
+
+The governing energy equation is
 
 $$
-L_x=5,\qquad L_y=1.
+\frac{\partial T}{\partial t}
++\frac{\partial (uT)}{\partial x}
++\frac{\partial (vT)}{\partial y}
+=
+\frac{1}{Pe}\nabla^2 T
++\frac{Br}{Pe}\Phi,
 $$
 
-The prescribed velocity field represents fully developed laminar channel flow:
+where $\Phi$ is the viscous-dissipation function:
+
+$$
+\Phi =
+2\left(\frac{\partial u}{\partial x}\right)^2
++2\left(\frac{\partial v}{\partial y}\right)^2
++\left(
+\frac{\partial u}{\partial y}
++\frac{\partial v}{\partial x}
+\right)^2.
+$$
+
+The dimensionless parameters are defined as
+
+$$
+Pe=Re\,Pr,\qquad Br=Ec\,Pr.
+$$
+
+The computational domain is a rectangular channel:
+
+$$
+0\leq x\leq 5,\qquad 0\leq y\leq 1.
+$$
+
+A prescribed fully developed laminar velocity profile is used:
 
 $$
 u(y)=18y(1-y),\qquad v=0,
@@ -18,115 +58,114 @@ $$
 
 with a mean velocity of $\bar{u}=3$.
 
-The energy equation accounts for convective transport, thermal diffusion, and viscous dissipation. Its parameterized form is:
+For the parameter study, a convection coefficient $c$ is introduced to control the strength of convective transport:
 
 $$
 \frac{\partial T}{\partial t}
++c\left[
+\frac{\partial (uT)}{\partial x}
++\frac{\partial (vT)}{\partial y}
+\right]
 =
--c\nabla\cdot(\mathbf{u}T)
-+\frac{1}{Pe}\nabla^2T
-+\frac{Br}{Pe}\Phi,
+\frac{1}{Pe}\nabla^2 T
++\frac{Br}{Pe}\Phi.
 $$
 
-where $\Phi$ denotes the viscous-dissipation function without its multiplicative coefficient.
-
-The dimensionless parameters are defined as:
+The initial and boundary conditions are
 
 $$
-Pe=Re\,Pr,\qquad Br=Ec\,Pr.
+T(x,y,0)=y,
 $$
 
-The coefficient $c$ controls the strength of convective transport.
-
-## 2. Boundary and Initial Conditions
-
-The temperature boundary conditions are:
-
-| Boundary | Condition |
-|---|---|
-| Bottom wall | $T=0$ |
-| Top wall | $T=1$ |
-| Inlet | $T_{\mathrm{in}}(y)=y$ |
-| Outlet | $\partial T/\partial x=0$ |
-
-The initial temperature field is:
-
 $$
-T(x,y,0)=y.
+T_{\mathrm{in}}(y)=y,
+\qquad
+T(x,0)=0,
+\qquad
+T(x,1)=1,
 $$
 
-The velocity field remains prescribed throughout the calculation. The project therefore solves the energy equation without simultaneously solving the momentum equations.
-
-## 3. Numerical Methods
-
-The computational domain is discretized using a second-order, cell-centred finite-volume formulation on a structured Cartesian grid. Central-difference approximations are used for the spatial derivatives.
-
-The resulting semi-discrete system is advanced in pseudo-time until the steady-state residual satisfies the prescribed convergence criterion.
-
-Four numerical methods are implemented:
-
-- **Approximate factorization method (APF):** An iterative method based on factorization of the spatial operator.
-- **Sparse direct implicit method:** An implicit update based on solving a sparse linear system.
-- **Explicit midpoint Runge–Kutta (RK2):** A second-order explicit time-integration method.
-- **Classical Runge–Kutta (RK4):** A fourth-order explicit time-integration method.
-
-The methods are compared using residual histories, iteration counts, and computation times. An eigenvalue-based stability analysis is also performed to estimate the time-step restrictions of the explicit methods.
-
-## 4. Parameter Study
-
-The parameter study investigates the effects of the Brinkman number, convection coefficient, and Peclet number on the steady-state temperature distribution.
-
-### 4.1 Brinkman Number
-
-The Brinkman number controls the strength of viscous dissipation relative to thermal diffusion. The following values are considered:
+with a zero streamwise temperature gradient at the outlet:
 
 $$
-Br=0,\quad 0.07,\quad 0.2,
+\frac{\partial T}{\partial x}=0.
 $$
 
-with $Pe=17.5$ and $c=1$ held constant.
+The velocity field is prescribed and remains unchanged throughout the simulations. The project therefore focuses on the numerical solution of the energy equation rather than a coupled momentum and energy calculation.
 
-### 4.2 Convection Coefficient
+## Features
 
-The convection coefficient is varied to examine the influence of convective transport:
+- Second-order, cell-centred finite-volume spatial discretization on a structured Cartesian grid.
+- Central-difference approximations for convection and diffusion.
+- Viscous-dissipation source term based on the prescribed velocity gradients.
+- Approximate factorization method (APF).
+- Sparse direct implicit method.
+- Explicit midpoint Runge–Kutta method (RK2).
+- Classical fourth-order Runge–Kutta method (RK4).
+- Eigenvalue-based stability analysis and amplification-factor evaluation.
+- Numerical time-step stability assessment.
+- Residual convergence and computational-time comparisons.
+- Grid-refinement and numerical accuracy assessment.
+- Parameter studies for the Peclet number, Brinkman number, and convection coefficient.
+- Temperature contours and wall-normal cross-section plots.
+- Separate numerical solvers and shared visualization utilities.
+
+## Numerical method
+
+The spatial discretization produces a semi-discrete system of ordinary differential equations:
 
 $$
-c=0.4,\quad 1,\quad 10,
+\frac{d\overline{T}_{ij}}{dt}
+=
+FI_{ij}
++\frac{Br}{Pe}\Phi_{ij},
 $$
 
-with $Pe=17.5$ and $Br=0.2$ held constant.
+where $FI_{ij}$ contains the discretized convective and diffusive contributions, and $\Phi_{ij}$ is the discrete viscous-dissipation function.
 
-### 4.3 Peclet Number
+The resulting system is advanced in pseudo-time until the steady-state residual satisfies the prescribed convergence tolerance. The pseudo-time variable is used as a numerical means of reaching steady state; it does not represent a prediction of the physical transient evolution.
 
-The Peclet-number study considers:
+Four solution methods are implemented:
+
+1. **APF:** An approximate factorization method for iterative time advancement.
+2. **Sparse direct implicit:** An implicit update based on a sparse linear-system solution.
+3. **RK2:** Explicit midpoint Runge–Kutta integration.
+4. **RK4:** Classical fourth-order explicit Runge–Kutta integration.
+
+The stability of the explicit methods is examined using the eigenvalues of the semi-discrete spatial operator. For an eigenvalue $\lambda$ and time step $\Delta t$, the amplification factor is evaluated as
 
 $$
-Pe=1,\quad 17.5,\quad 50.
+G=R(\lambda\Delta t),
 $$
 
-The ratio $Br/Pe$ is held constant at $0.004$. This keeps the coefficient of the viscous-dissipation source fixed while varying the thermal-diffusion coefficient $1/Pe$.
+where $R$ is the stability polynomial of the selected time integrator. Stability requires
 
-Temperature contours and wall-normal temperature profiles are used to compare the resulting fields.
+$$
+|G|\leq 1
+$$
 
-## 5. Repository Structure
+for all eigenvalues of the discretized operator.
 
-The main project components are organized as follows:
+## Repository structure
 
 ```text
-project/
-│
+.
 ├── src/
 │   ├── initialization.py
 │   ├── boundary_condition.py
 │   ├── diagnostics.py
 │   ├── solvers/
 │   │   ├── apf.py
-│   │   └── ...
+│   │   ├── ...
 │   └── visualization/
 │       └── ...
 │
 ├── results/
 │   ├── solver_comparison/
+│   │   ├── residual_vs_iteration.png
+│   │   ├── residual_vs_time.png
+│   │   └── solver_comparison.csv
+│   │
 │   └── parameter_study/
 │       ├── figures/
 │       │   ├── parameter_groups/
@@ -137,6 +176,8 @@ project/
 │   ├── 01_problem_Formulation.tex
 │   ├── 02_Governing_Equation_and_Spatial_Discretization.tex
 │   ├── 03_Temporal_Discretization.tex
+│   ├── 04_Stability_Analysis.tex
+│   ├── 05_Numerical_Accuracy_Assessment.tex
 │   └── ...
 │
 ├── main.tex
@@ -144,13 +185,11 @@ project/
 └── README.md
 ```
 
-This is a simplified representation of the project structure. Additional solver, visualization, and result files may be present.
+The reusable numerical methods are implemented under `src/`, while the generated numerical results are stored under `results/`. The LaTeX report is organized through `main.tex` and the individual section files in `sections/`.
 
-## 6. Requirements
+## Requirements
 
-The Python implementation uses the following libraries:
-
-- Python
+- Python 3
 - NumPy
 - SciPy
 - Matplotlib
@@ -158,26 +197,14 @@ The Python implementation uses the following libraries:
 Install the main dependencies with:
 
 ```bash
-pip install numpy scipy matplotlib
+python -m pip install numpy scipy matplotlib
 ```
 
-The LaTeX report requires a LaTeX distribution and the packages specified in `packages.tex`.
+## Running the project
 
-## 7. Running the Simulations
+Run the relevant Python study script from the project root. The parameter-study driver defines the cases in `CASES` and executes them through `run_parameter_study()`.
 
-### Parameter Study
-
-The parameter-study script defines the simulation cases in `CASES` and executes them through `run_parameter_study()`.
-
-Run the parameter-study script from the project root:
-
-```bash
-python path/to/parameter_study.py
-```
-
-The script solves each unique case, generates comparison figures, and saves the numerical fields and diagnostics.
-
-The main configuration parameters are defined at the beginning of the script:
+The main parameter-study settings are:
 
 ```python
 CELL_COUNT_X = 100
@@ -190,66 +217,125 @@ TOLERANCE = 1e-10
 MEAN_VELOCITY = 3.0
 ```
 
-### Solver Comparison
+The parameter-study script solves each unique case, generates the comparison figures, and saves the temperature fields and numerical diagnostics.
 
-The solver-comparison script evaluates the implemented numerical methods using a common grid, convergence tolerance, and selected time steps. The corresponding configuration and execution are defined in the solver-comparison script.
+The solver-comparison study uses a separate configuration to compare the four numerical methods under a common grid and convergence criterion.
 
-The reported performance depends on the grid resolution, time step, convergence tolerance, implementation, and computational environment.
+## Studies and results
 
-## 8. Generated Results
+### 1. Solver comparison
 
-### Solver Comparison
+The four numerical methods were compared on a $50\times20$ grid using five independent runs per method. All runs converged to a residual tolerance of $10^{-12}$.
 
-The solver-comparison study generates:
+The selected pseudo-time steps and median computation times were:
 
-- Residual versus iteration plots.
-- Residual versus elapsed-time plots.
-- Numerical data containing iteration counts, final residuals, and computation times.
+| Method | Time step | Iterations | Median time (s) |
+|---|---:|---:|---:|
+| APF | 0.265 | 295 | 6.2817 |
+| Sparse direct implicit | 1.000 | 16 | 0.1403 |
+| RK2 | 0.017 | 392 | 8.0148 |
+| RK4 | 0.024 | 309 | 10.7187 |
 
-### Parameter Study
+The sparse direct method had the shortest runtime for this particular grid and implementation. RK4 required fewer iterations than RK2, but its additional stages per iteration resulted in a longer total computation time.
 
-The parameter study generates:
+The results are specific to the selected grid, time steps, convergence criterion, and implementations. They do not establish a general performance ranking for other configurations.
 
-- Temperature-contour comparisons for the Brinkman-number cases.
-- Temperature-contour comparisons for the convection-coefficient cases.
-- Temperature-contour comparisons for the Peclet-number cases.
-- Contour and cross-section figures for selected parameter combinations.
-- Compressed numerical data containing temperature fields, parameter values, residuals, computation times, and iteration counts.
+**Residual convergence versus iteration**
 
-The parameter-study data are saved in:
+![Residual convergence versus iteration](results/solver_comparison/residual_vs_iteration.png)
 
-```text
-results/parameter_study/parameter_study_fields.npz
-```
+**Residual convergence versus elapsed computation time**
 
-The data can be loaded in Python using:
+![Residual convergence versus elapsed time](results/solver_comparison/residual_vs_time.png)
 
-```python
-import numpy as np
+### 2. Effect of the Brinkman number
 
-data = np.load(
-    "results/parameter_study/parameter_study_fields.npz"
-)
+The Brinkman-number study examines the influence of viscous dissipation using
 
-print(data.files)
-```
+$$
+Br=0,\quad 0.07,\quad 0.2,
+$$
 
-## 9. Report
+with $Pe=17.5$ and $c=1$.
 
-The project report is written in LaTeX. It covers the governing equations, spatial and temporal discretization, stability analysis, numerical accuracy assessment, computational implementation, solver comparison, and parameter study.
+At $Br=0$, the temperature field remains close to the initial linear distribution. Increasing the Brinkman number strengthens viscous heating, producing larger temperature deviations in regions with high velocity gradients.
 
-Compile the main LaTeX file from the project root using:
+![Effect of the Brinkman number](results/parameter_study/figures/parameter_groups/brinkman_number.png)
 
-```bash
-latexmk -pdf main.tex
-```
+### 3. Effect of the convection coefficient
 
-Alternatively, compile it using a LaTeX editor.
+The convection coefficient is varied using
 
-## 10. Scope and Limitations
+$$
+c=0.4,\quad 1,\quad 10,
+$$
 
-The velocity field is prescribed and is not updated by solving the momentum equations. The study therefore focuses on heat transfer within an established channel-flow field.
+with $Pe=17.5$ and $Br=0.2$.
 
-Central-difference spatial discretization is used for the convective and diffusive terms. Its accuracy and stability characteristics depend on the grid resolution and the relative strengths of convection and diffusion.
+A larger coefficient strengthens the transport of the inlet temperature distribution downstream. Reducing the coefficient weakens convective transport and increases the relative influence of thermal diffusion and viscous dissipation.
 
-The time variable is used for pseudo-time integration toward a steady solution. The numerical time steps and convergence histories should therefore be interpreted in the context of the steady-state solution procedure rather than as predictions of physical transient behaviour.
+![Effect of the convection coefficient](results/parameter_study/figures/parameter_groups/convection_coefficient.png)
+
+### 4. Effect of the Peclet number
+
+The Peclet-number study considers
+
+$$
+Pe=1,\quad 17.5,\quad 50.
+$$
+
+The ratio $Br/Pe$ is held constant at $0.004$. Therefore, the coefficient of viscous dissipation remains fixed while the thermal-diffusion coefficient $1/Pe$ decreases as the Peclet number increases.
+
+At low Peclet numbers, stronger thermal diffusion smooths the temperature variations generated by viscous heating. At higher Peclet numbers, weaker diffusion allows larger departures from the initial linear temperature profile.
+
+![Effect of the Peclet number](results/parameter_study/figures/parameter_groups/peclet_number.png)
+
+### 5. Temperature cross-sections
+
+Temperature contours and wall-normal profiles are examined at two streamwise locations:
+
+$$
+\frac{x}{L_x}=0.15,\qquad \frac{x}{L_x}=0.85.
+$$
+
+Three parameter combinations are used:
+
+| Case | Peclet number | Brinkman number | Convection coefficient |
+|---|---:|---:|---:|
+| 1 | 17.5 | 0.07 | 1.0 |
+| 2 | 17.5 | 0.20 | 1.0 |
+| 3 | 17.5 | 0.20 | 0.4 |
+
+Comparing Cases 1 and 2 isolates the effect of viscous dissipation. The larger Brinkman number produces more pronounced variations in the wall-normal temperature profiles.
+
+Comparing Cases 2 and 3 isolates the effect of the convection coefficient. Reducing the convection coefficient allows thermal diffusion and viscous dissipation to have a greater relative influence on the temperature distribution.
+
+**Case 1: $Br=0.07$, $c=1$**
+
+![Temperature contours and cross-sections for Case 1](results/parameter_study/figures/cross_sections/br_007_cross_sections.png)
+
+**Case 2: $Br=0.2$, $c=1$**
+
+![Temperature contours and cross-sections for Case 2](results/parameter_study/figures/cross_sections/br_02_cross_sections.png)
+
+**Case 3: $Br=0.2$, $c=0.4$**
+
+![Temperature contours and cross-sections for Case 3](results/parameter_study/figures/cross_sections/gamma_04_cross_sections.png)
+
+## Stability-analysis scope
+
+The eigenvalue analysis examines the semi-discrete spatial operator and its interaction with the selected time integrators. The amplification-factor conditions provide estimates of the absolute-stability limits for the explicit methods.
+
+These limits apply to the analyzed spatial operator and grid. They are not accuracy limits, and a stable time step does not necessarily provide the most efficient or accurate steady-state calculation. The APF method is assessed separately through numerical time-step experiments rather than by assuming it has the stability properties of implicit Euler.
+
+## Current limitations
+
+- The velocity field is prescribed; the momentum equations are not solved.
+- The numerical study uses a central-difference spatial discretization. Its performance depends on the relative strengths of convection and diffusion and on grid resolution.
+- The pseudo-time integration is used to obtain steady-state solutions, not to predict physical transient behaviour.
+- Solver performance comparisons depend on implementation details and the selected time steps.
+- Grid-refinement comparisons are needed to assess spatial accuracy independently of residual convergence.
+
+## Purpose
+
+This project provides a numerical framework for solving the two-dimensional channel-flow energy equation and studying the interaction between convection, thermal diffusion, and viscous dissipation. It also examines how spatial discretization, time integration, stability restrictions, and solver implementation affect the computational cost of obtaining steady-state solutions.
