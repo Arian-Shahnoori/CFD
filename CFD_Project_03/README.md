@@ -4,7 +4,7 @@ A modular Python implementation for solving the two-dimensional energy equation 
 
 ## Quick links
 
-- [Source code](CFD_03_2D_Energy_Equation/code/src/)
+- [Source code](CFD_03_2D_Energy_Equation/Code/src/)
 - [Solver implementations](src/solvers/)
 - [Initialization and boundary conditions](src/initialization.py)
 - [Visualization utilities](src/visualization/)
