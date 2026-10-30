@@ -12,30 +12,42 @@ A modular Python implementation for solving the two-dimensional energy equation 
 - [Parameter-study results](CFD_03_2D_Energy_Equation/results/parameter_study/)
 - [LaTeX report](CFD_03_2D_Energy_Equation/Report/main.tex)
 - [Report sections](CFD_03_2D_Energy_Equation/Report/sections/)
+- [Compiled report (PDF)](CFD_03_2D_Energy_Equation/Report/main.pdf)
 
 ## Overview
 
 The governing energy equation is
 
 $$
+\begin{aligned}
 \frac{\partial T}{\partial t}
 +\frac{\partial (uT)}{\partial x}
 +\frac{\partial (vT)}{\partial y}
-=
-\frac{1}{Pe}\nabla^2 T
-+\frac{Br}{Pe}\Phi,
+={}&
+\frac{1}{Pe}
+\left(
+\frac{\partial^2 T}{\partial x^2}
++\frac{\partial^2 T}{\partial y^2}
+\right)
+\\
+&+\frac{Br}{Pe}\Phi.
+\end{aligned}
 $$
 
 where $\Phi$ is the viscous-dissipation function:
 
 $$
-\Phi =
+\begin{aligned}
+\Phi={}&
 2\left(\frac{\partial u}{\partial x}\right)^2
 +2\left(\frac{\partial v}{\partial y}\right)^2
-+\left(
+\\
+&+
+\left(
 \frac{\partial u}{\partial y}
 +\frac{\partial v}{\partial x}
 \right)^2.
+\end{aligned}
 $$
 
 The dimensionless parameters are defined as
@@ -61,14 +73,21 @@ with a mean velocity of $\bar{u}=3$.
 For the parameter study, a convection coefficient $c$ is introduced to control the strength of convective transport:
 
 $$
+\begin{aligned}
 \frac{\partial T}{\partial t}
 +c\left[
 \frac{\partial (uT)}{\partial x}
 +\frac{\partial (vT)}{\partial y}
 \right]
-=
-\frac{1}{Pe}\nabla^2 T
-+\frac{Br}{Pe}\Phi.
+={}&
+\frac{1}{Pe}
+\left(
+\frac{\partial^2 T}{\partial x^2}
++\frac{\partial^2 T}{\partial y^2}
+\right)
+\\
+&+\frac{Br}{Pe}\Phi.
+\end{aligned}
 $$
 
 The initial and boundary conditions are
@@ -150,42 +169,46 @@ for all eigenvalues of the discretized operator.
 
 ```text
 .
-├── src/
-│   ├── initialization.py
-│   ├── boundary_condition.py
-│   ├── diagnostics.py
-│   ├── solvers/
-│   │   ├── apf.py
-│   │   ├── ...
-│   └── visualization/
-│       └── ...
-│
-├── results/
-│   ├── solver_comparison/
-│   │   ├── residual_vs_iteration.png
-│   │   ├── residual_vs_time.png
-│   │   └── solver_comparison.csv
-│   │
-│   └── parameter_study/
-│       ├── figures/
-│       │   ├── parameter_groups/
-│       │   └── cross_sections/
-│       └── parameter_study_fields.npz
-│
-├── sections/
-│   ├── 01_problem_Formulation.tex
-│   ├── 02_Governing_Equation_and_Spatial_Discretization.tex
-│   ├── 03_Temporal_Discretization.tex
-│   ├── 04_Stability_Analysis.tex
-│   ├── 05_Numerical_Accuracy_Assessment.tex
-│   └── ...
-│
-├── main.tex
-├── packages.tex
-└── README.md
+└── CFD_03_2D_Energy_Equation/
+    ├── Code/
+    │   └── src/
+    │       ├── initialization.py
+    │       ├── boundary_condition.py
+    │       ├── diagnostics.py
+    │       ├── solvers/
+    │       │   ├── apf.py
+    │       │   └── ...
+    │       └── visualization/
+    │           └── ...
+    │
+    ├── results/
+    │   ├── solver_comparison/
+    │   │   ├── residual_vs_iteration.png
+    │   │   ├── residual_vs_time.png
+    │   │   └── solver_comparison.csv
+    │   │
+    │   ├── parameter_study/
+    │   │   ├── figures/
+    │   │   │   ├── parameter_groups/
+    │   │   │   └── cross_sections/
+    │   │   └── parameter_study_fields.npz
+    │   │
+    │   └── temperature_evolution.gif
+    │
+    └── Report/
+        ├── main.tex
+        ├── main.pdf
+        ├── packages.tex
+        └── sections/
+            ├── 01_problem_Formulation.tex
+            ├── 02_Governing_Equation_and_Spatial_Discretization.tex
+            ├── 03_Temporal_Discretization.tex
+            ├── 04_Stability_Analysis.tex
+            ├── 05_Numerical_Accuracy_Assessment.tex
+            └── ...
 ```
 
-The reusable numerical methods are implemented under `src/`, while the generated numerical results are stored under `results/`. The LaTeX report is organized through `main.tex` and the individual section files in `sections/`.
+The reusable numerical methods are implemented under `Code/src/`, while the generated numerical results are stored under `results/`. The LaTeX report is organized through `Report/main.tex` and the individual section files in `Report/sections/`.
 
 ## Requirements
 
@@ -248,7 +271,13 @@ The results are specific to the selected grid, time steps, convergence criterion
 
 ![Residual convergence versus elapsed time](CFD_03_2D_Energy_Equation/results/solver_comparison/residual_vs_time.png)
 
-### 2. Effect of the Brinkman number
+### 2. Temperature-field evolution
+
+The following animation shows the evolution of the temperature field during pseudo-time integration. It illustrates how convection, thermal diffusion, and viscous dissipation interact as the numerical solution approaches steady state.
+
+![Temperature-field evolution during pseudo-time integration](CFD_03_2D_Energy_Equation/results/temperature_evolution.gif)
+
+### 3. Effect of the Brinkman number
 
 The Brinkman-number study examines the influence of viscous dissipation using
 
@@ -262,7 +291,7 @@ At $Br=0$, the temperature field remains close to the initial linear distributio
 
 ![Effect of the Brinkman number](CFD_03_2D_Energy_Equation/results/parameter_study/figures/parameter_groups/brinkman_number.png)
 
-### 3. Effect of the convection coefficient
+### 4. Effect of the convection coefficient
 
 The convection coefficient is varied using
 
@@ -276,7 +305,7 @@ A larger coefficient strengthens the transport of the inlet temperature distribu
 
 ![Effect of the convection coefficient](CFD_03_2D_Energy_Equation/results/parameter_study/figures/parameter_groups/convection_coefficient.png)
 
-### 4. Effect of the Peclet number
+### 5. Effect of the Peclet number
 
 The Peclet-number study considers
 
@@ -290,7 +319,7 @@ At low Peclet numbers, stronger thermal diffusion smooths the temperature variat
 
 ![Effect of the Peclet number](CFD_03_2D_Energy_Equation/results/parameter_study/figures/parameter_groups/peclet_number.png)
 
-### 5. Temperature cross-sections
+### 6. Temperature cross-sections
 
 Temperature contours and wall-normal profiles are examined at two streamwise locations:
 
@@ -339,3 +368,9 @@ These limits apply to the analyzed spatial operator and grid. They are not accur
 ## Purpose
 
 This project provides a numerical framework for solving the two-dimensional channel-flow energy equation and studying the interaction between convection, thermal diffusion, and viscous dissipation. It also examines how spatial discretization, time integration, stability restrictions, and solver implementation affect the computational cost of obtaining steady-state solutions.
+
+## Report
+
+The complete project report describes the governing equations, numerical formulation, stability analysis, solver implementation, performance comparison, and parameter study.
+
+[**View the complete project report (PDF)**](CFD_03_2D_Energy_Equation/Report/main.pdf)
