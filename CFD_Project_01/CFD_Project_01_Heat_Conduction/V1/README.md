@@ -76,7 +76,7 @@ $$
 
 ### Temperature Distribution
 
-![Temperature Field](CFD_Project_01_Heat_Conduction/report/latex/figures/temperature_contours.png)
+![Temperature Field](report/latex/figures/temperature_contours.png)
 
 The numerical solution shows excellent agreement with the analytical solution throughout the computational domain.
 
@@ -84,7 +84,7 @@ The numerical solution shows excellent agreement with the analytical solution th
 
 ### Error Distribution
 
-![Error Field](CFD_Project_01_Heat_Conduction/report/latex/figures/error_field.png)
+![Error Field](report/latex/figures/error_field.png)
 
 The numerical error remains small across the domain and exhibits the expected behavior of a second-order spatial discretization.
 
@@ -92,7 +92,7 @@ The numerical error remains small across the domain and exhibits the expected be
 
 ### Residual Convergence
 
-![Residual History](CFD_Project_01_Heat_Conduction/report/latex/figures/residual_history.png)
+![Residual History](report/latex/figures/residual_history.png)
 
 The Point Gauss-Seidel solver converges monotonically until the prescribed residual tolerance is satisfied.
 
@@ -100,7 +100,7 @@ The Point Gauss-Seidel solver converges monotonically until the prescribed resid
 
 ### Line-Cut Comparison
 
-![Line Cuts](CFD_Project_01_Heat_Conduction/report/latex/figures/line_cuts.png)
+![Line Cuts](report/latex/figures/line_cuts.png)
 
 Horizontal and vertical line cuts demonstrate excellent agreement between the numerical and analytical solutions.
 
@@ -174,7 +174,7 @@ This project forms the first component of a larger Computational Fluid Dynamics 
 The complete technical report is available in
 
 
-[📄 CFD Project Report](CFD_Project_01_Heat_Conduction/report/CFD__1_Part1_Point_Gauss_Seidel.pdf)
+[📄 CFD Project Report](report/CFD__1_Part1_Point_Gauss_Seidel.pdf)
 
 
 and includes the mathematical derivation, numerical implementation, verification procedure, computational setup, and detailed discussion of the results.

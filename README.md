@@ -29,7 +29,7 @@ The repository preserves the original implementation and subsequent versions so 
 
 *Representative result: temperature contours obtained using the fully implicit solution method.*
 
-[Open the Project 01 folder](CFD_Project_01/CFD_Project_01_Heat_Conduction/)
+[Open the Project 01 folder](CFD_Project_01/)
 
 ### Project 02 — One-Dimensional Linear Advection
 
@@ -56,7 +56,7 @@ For the second-order upwind scheme, the analysis gives a limiting Courant number
 
 *Representative result: numerical and analytical solution profiles for the second-order upwind scheme advanced with RK2.*
 
-[Open the Project 02 folder](CFD_Project_02/CFD_Project_02_1D_Advection/)
+[Open the Project 02 folder](CFD_Project_02/)
 
 ## Repository Layout
 
