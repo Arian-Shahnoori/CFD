@@ -1,0 +1,133 @@
+\documentclass[11pt,a4paper]{article}
+
+%------------------------------------------------
+% Packages and formatting
+%------------------------------------------------
+\input{packages}
+
+%------------------------------------------------
+% Document information
+%------------------------------------------------
+
+\title{
+    \Huge\textbf{Steady Temperature Distribution in a Two-Dimensional Channel Flow}\\[0.4cm]
+    \Large
+    A Finite-Volume Study of Convection, Thermal Diffusion, and Viscous Dissipation
+}
+
+\author{
+    \Large Arian Shahnoori
+}
+
+\date{\today}
+
+%================================================
+\begin{document}
+%================================================
+
+\maketitle
+\thispagestyle{empty}
+
+\vspace{-1cm}
+
+\begin{abstract}
+A numerical solver is developed to investigate the steady-state temperature
+distribution in a two-dimensional channel flow. The governing energy equation
+accounts for convective transport, thermal diffusion, and viscous dissipation.
+It is discretized in space using a second-order, cell-centered finite-volume
+formulation on a structured Cartesian grid. The resulting semi-discrete
+system is advanced in pseudo-time using four numerical methods: an
+approximate factorization method, a sparse direct implicit method, and
+second- and fourth-order explicit Runge--Kutta methods.
+
+The numerical study examines the stability and convergence characteristics
+of the time-integration methods, including the influence of time-step
+selection on computational performance. Solver performance is compared
+in terms of convergence history, iteration count, and computation time.
+Finally, parameter studies investigate the effects of the Peclet number,
+the Brinkman number, and the convection coefficient on the resulting
+temperature field. Temperature contours and wall-normal profiles are
+used to examine the relative contributions of convection, thermal
+diffusion, and viscous dissipation.
+\end{abstract}
+
+\vspace{0.5cm}
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Physical Problem & Two-Dimensional Channel-Flow Heat Transfer \\
+Domain & Rectangular Channel ($L_x=5$, $L_y=1$) \\
+Velocity Field & Prescribed Fully Developed Laminar Profile \\
+Governing Equation & Convection--Diffusion Energy Equation with Viscous Dissipation \\
+Spatial Discretization & Cell-Centered Finite Volume Method \\
+Spatial Accuracy & Second Order \\
+Time Integration & Pseudo-Time Marching to Steady State \\
+Solution Methods & APF, Sparse Direct Implicit, RK2, RK4 \\
+Stability Analysis & Eigenvalue Analysis and Amplification Factors \\
+Parameter Study & $Pe$, $Br$, and Convection Coefficient $c$ \\
+Programming Language & Python \\
+Performance Evaluation & Residual Convergence, Iterations, and Computation Time \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\newpage
+
+\tableofcontents
+
+\newpage
+
+%------------------------------------------------
+% Governing equations and numerical formulation
+%------------------------------------------------
+
+\input{sections/01_problem_Formulation}
+\newpage
+\input{sections/02_Governing_Equation_and_Spatial_Discretization}
+\newpage
+\input{sections/03_Temporal_Discretization}
+
+%------------------------------------------------
+% Stability and numerical accuracy
+%------------------------------------------------
+\newpage
+\input{sections/04_Stability_Analysis}
+\newpage
+\input{sections/05_Numerical_Accuracy_Assessment}
+
+%------------------------------------------------
+% Computational implementation and solvers
+%------------------------------------------------
+\newpage
+\input{sections/06_Computational_Setup}
+
+\input{sections/06b_solvers_apf}
+
+\input{sections/06c_solvers_runge_kutta}
+
+\input{sections/06d_solvers_direct}
+
+%------------------------------------------------
+% Results and discussion
+%------------------------------------------------
+\newpage
+\input{sections/07a_result}
+
+\input{sections/07b_results}
+
+\input{sections/07c_results}
+
+\input{sections/07d_results}
+
+\input{sections/07e_results}
+
+\input{sections/07f_results}
+
+%------------------------------------------------
+% Conclusion
+%------------------------------------------------
+\newpage
+\input{sections/08_conclusion}
+
+\end{document}

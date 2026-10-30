@@ -1,0 +1,268 @@
+\section{Computational Implementation}
+\label{sec:computational_implementation}
+
+The computational implementation is organized into separate
+procedures for grid generation, initialization of the solution
+fields, and enforcement of boundary conditions. This separation
+allows the same computational setup to be used by all numerical
+solution methods.
+
+\subsection{Grid Generation}
+
+The computational grid is uniform and cell-centered. The grid
+generation procedure calculates the grid spacings and the
+coordinates of the cell centers from the domain dimensions and
+the number of physical cells in each direction.
+
+\begin{algorithm}[H]
+\caption{Grid Generation}
+\label{alg:grid_generation}
+\begin{algorithmic}[1]
+\Require Domain dimensions $L_x,L_y$ and cell counts $n_x,n_y$
+\Ensure Cell-center coordinates $x_i,y_j$ and grid spacings
+$\Delta x,\Delta y$
+\State $\Delta x \gets L_x/n_x$
+\State $\Delta y \gets L_y/n_y$
+\For{$i=0,\ldots,n_x-1$}
+    \State $x_i \gets (i+\frac{1}{2})\Delta x$
+\EndFor
+\For{$j=0,\ldots,n_y-1$}
+    \State $y_j \gets (j+\frac{1}{2})\Delta y$
+\EndFor
+\State \Return $x,y,\Delta x,\Delta y$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Initialization of the Solution Fields}
+
+The initial temperature distribution is prescribed as
+$T(x,y,0)=y$. The temperature is therefore initialized using
+the wall-normal coordinate, while the same profile is assigned
+at every streamwise location. The velocity components are
+calculated from the prescribed fully developed velocity profile
+and remain fixed throughout the simulation.
+
+\begin{algorithm}[H]
+\caption{Initialization of Temperature and Velocity Fields}
+\label{alg:field_initialization}
+\begin{algorithmic}[1]
+\Require Grid coordinates $y_j$, cell counts $n_x,n_y$,
+and mean velocity $\overline{u}$
+\Ensure Initial temperature field $T$ and velocity fields $u,v$
+\State Allocate the temperature array, including ghost cells
+\For{each physical cell $(i,j)$}
+    \State $T_{ij} \gets y_j$
+    \State $u_{ij} \gets 6\overline{u}\,y_j(1-y_j)$
+    \State $v_{ij} \gets 0$
+\EndFor
+\State Apply the temperature boundary conditions
+\State \Return $T,u,v$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Boundary-Condition Implementation}
+
+The temperature array includes one layer of ghost cells around
+the physical domain. The function
+\texttt{apply\_temperature\_boundary\_conditions} updates these
+values using the relations established in
+Section~\ref{subsec:ghost_cell_boundary_conditions}. The
+ghost-cell temperatures are calculated from the adjacent
+physical-cell temperatures and the prescribed boundary values.
+
+\begin{algorithm}[H]
+\caption{Application of Temperature Boundary Conditions}
+\label{alg:temperature_boundary_conditions}
+\begin{algorithmic}[1]
+\Require Temperature array $T$, grid dimensions $n_x,n_y$,
+grid spacing $\Delta y$, inlet profile $T_{\mathrm{in}}(y)$,
+and wall temperatures $T_{\mathrm{bottom}},T_{\mathrm{top}}$
+\Ensure Updated temperature array $T$
+\For{each streamwise index $i$, including ghost-cell indices}
+    \State $T_{i,0}\gets 2T_{\mathrm{bottom}}-T_{i,1}$
+    \State $T_{i,n_y+1}\gets 2T_{\mathrm{top}}-T_{i,n_y}$
+\EndFor
+\For{$j=1,\ldots,n_y$}
+    \State $y_j\gets (j-\frac{1}{2})\Delta y$
+    \State $T_{0,j}\gets 2T_{\mathrm{in}}(y_j)-T_{1,j}$
+    \State $T_{n_x+1,j}\gets T_{n_x,j}$
+\EndFor
+\State \Return $T$
+\end{algorithmic}
+\end{algorithm}
+
+The same boundary-condition procedure is reused during the
+numerical solution whenever updated temperature values require
+consistent ghost-cell values. The ghost cells are not independent
+unknowns; they provide the values needed to evaluate the spatial
+operator near the boundaries.
+
+\subsection{Convergence Monitoring and Diagnostics}
+\label{subsec:diagnostics}
+
+Two complementary quantities are used to assess the numerical
+solutions: the normalized error relative to a reference temperature
+field and the residual of the discrete steady energy equation.
+The error measures the difference between two temperature fields,
+whereas the residual measures how closely the computed solution
+satisfies the discretized governing equation.
+
+\subsubsection{Normalized $L_p$ Error}
+
+The error between the numerical and reference solutions is defined
+for each control volume as
+\begin{equation}
+E_i = T_i - T_i^{\mathrm{ref}},
+\end{equation}
+where $T_i$ and $T_i^{\mathrm{ref}}$ denote the numerical and
+reference temperatures in control volume $i$, respectively.
+A normalized, area-weighted $L_p$ error measure is defined as
+\begin{equation}
+L_p =
+\left(
+\frac{
+\displaystyle\sum_{i=1}^{N_{cv}}
+A_i |E_i|^p
+}{
+\displaystyle\sum_{i=1}^{N_{cv}} A_i
+}
+\right)^{1/p},
+\label{eq:normalized_lp_error}
+\end{equation}
+where $N_{cv}$ is the number of physical control volumes,
+$A_i$ is the area of control volume $i$, and $p$ specifies the
+error measure. The denominator represents the total computational
+domain area, so the expression measures an area-weighted average
+of the error magnitude raised to the power $p$, followed by the
+corresponding root.
+
+For $p=2$, Equation~\eqref{eq:normalized_lp_error} becomes
+\begin{equation}
+L_2 =
+\sqrt{
+\frac{
+\displaystyle\sum_{i=1}^{N_{cv}} A_i |E_i|^2
+}{
+\displaystyle\sum_{i=1}^{N_{cv}} A_i
+}
+}.
+\label{eq:normalized_l2_error}
+\end{equation}
+This measure is the area-weighted root-mean-square (RMS) error.
+It assigns greater weight to larger local errors because the
+differences are squared before averaging.
+
+In the present study, the computational grid is uniform, such
+that every control volume has area $A_i=\Delta x\Delta y$.
+The cell areas therefore cancel in
+Equation~\eqref{eq:normalized_l2_error}, giving
+\begin{equation}
+L_2 =
+\sqrt{
+\frac{1}{N_{cv}}
+\sum_{i=1}^{N_{cv}} |E_i|^2
+}.
+\label{eq:rms_error}
+\end{equation}
+Accordingly, the error is evaluated in the implementation as
+the square root of the mean squared difference between the two
+temperature arrays. Only physical-cell values are included;
+ghost cells are excluded from the comparison.
+
+\begin{algorithm}[H]
+\caption{Normalized $L_2$ Error Evaluation}
+\label{alg:l2_error}
+\begin{algorithmic}[1]
+\Require Reference temperature field $T^{\mathrm{ref}}$
+and numerical temperature field $T$
+\Ensure Normalized error $L_2$
+\State Convert both fields to floating-point arrays
+\If{$\operatorname{shape}(T^{\mathrm{ref}})
+\neq \operatorname{shape}(T)$}
+    \State Raise a shape-mismatch error
+\EndIf
+\State $E \gets T-T^{\mathrm{ref}}$
+\State $L_2 \gets \sqrt{\operatorname{mean}(|E|^2)}$
+\State \Return $L_2$
+\end{algorithmic}
+\end{algorithm}
+
+This normalized error measure is useful for comparing temperature
+fields obtained on different uniform grid resolutions because
+its value is not directly increased merely by increasing the
+number of control volumes. Its interpretation nevertheless depends
+on the reference solution and on comparing the fields over the
+same physical domain.
+
+\subsubsection{Steady-State Residual}
+
+The steady-state residual is evaluated using the discrete spatial
+operator implemented in \texttt{build\_rhs}. For each physical
+wall-normal index, the function evaluates the right-hand side
+of the semi-discrete energy equation and stores the resulting
+values in an auxiliary array. The residual is then extracted
+over the physical computational domain, excluding ghost cells.
+
+Writing the semi-discrete equation as
+\begin{equation}
+\frac{\mathrm{d}T_{ij}}{\mathrm{d}t}
+=
+\mathcal{R}_{ij}(T),
+\end{equation}
+the steady-state residual at cell $(i,j)$ is
+$\mathcal{R}_{ij}(T)$, corresponding to the discrete right-hand
+side evaluated using the current temperature field. The RMS
+residual is defined as
+\begin{equation}
+R_{\mathrm{RMS}}
+=
+\sqrt{
+\frac{1}{n_x n_y}
+\sum_{i=1}^{n_x}
+\sum_{j=1}^{n_y}
+\left[\mathcal{R}_{ij}(T)\right]^2
+},
+\label{eq:steady_residual_rms}
+\end{equation}
+where $n_x$ and $n_y$ are the numbers of physical cells in the
+streamwise and wall-normal directions, respectively.
+
+At steady state, the time derivative vanishes and the discrete
+right-hand side approaches zero throughout the computational
+domain. Consequently, a decreasing RMS residual indicates
+convergence toward a solution of the discrete steady energy
+equation.
+
+\begin{algorithm}[H]
+\caption{Steady-State Residual Evaluation}
+\label{alg:steady_state_residual}
+\begin{algorithmic}[1]
+\Require Mesh dimensions $n_x,n_y$, temperature field $T$,
+velocity fields $u,v$, $\mathrm{Pe}$, $\mathrm{Br}$,
+domain dimensions $L_x,L_y$, and convection coefficient
+$\alpha_c$
+\Ensure RMS residual $R_{\mathrm{RMS}}$
+\State Allocate a zero-filled auxiliary array $\mathcal{R}$
+\For{$j=1,\ldots,n_y$}
+    \State Evaluate the discrete right-hand side using
+    \texttt{build\_rhs} at wall-normal index $j$
+    \State Store the returned values in column $j$ of
+    $\mathcal{R}$
+\EndFor
+\State Extract the physical-cell residuals
+$\mathcal{R}_{\mathrm{phys}}
+\gets \mathcal{R}_{1:n_x,\,1:n_y}$
+\State $R_{\mathrm{RMS}} \gets
+\sqrt{\operatorname{mean}
+\left(\mathcal{R}_{\mathrm{phys}}^2\right)}$
+\State \Return $R_{\mathrm{RMS}}$
+\end{algorithmic}
+\end{algorithm}
+
+The RMS residual assesses convergence of the discrete governing
+equation, whereas the normalized $L_2$ error assesses agreement
+with a reference temperature field. These quantities are
+complementary: a small residual indicates that the discrete
+equation is nearly satisfied, but it does not by itself establish
+the accuracy of the numerical solution or grid independence.
+

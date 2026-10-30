@@ -1,0 +1,212 @@
+\subsection{Explicit Runge--Kutta Implementation}
+\label{subsec:rk_implementation}
+
+The explicit Runge--Kutta methods are implemented using a
+common solver function, \texttt{\_solve\_with\_explicit\_rk}.
+The method is specified through the coefficients
+\texttt{rk\_a} and \texttt{rk\_b}, which determine the
+intermediate stages and the final weighted update,
+respectively. This allows the same implementation to be used
+for both the second-order explicit midpoint method and the
+classical fourth-order Runge--Kutta method derived in the
+previous section.
+
+\subsubsection{Stage Evaluation and Temperature Update}
+
+At each pseudo-time iteration, the solver evaluates the
+right-hand-side operator defined in
+Equation~\eqref{eq:rk_rhs_operator} at several intermediate
+temperature fields. For a method with $m$ stages, the
+intermediate fields and stage evaluations are expressed
+generally as
+\begin{align}
+T^{(s)}
+&=
+T^n+\Delta t
+\sum_{r=1}^{s-1}a_{sr}k_r,
+\qquad s=1,\ldots,m,
+\label{eq:rk_implementation_stages}
+\\
+k_s
+&=
+\mathcal{F}\left(T^{(s)}\right),
+\qquad s=1,\ldots,m,
+\label{eq:rk_implementation_rhs}
+\\
+T^{n+1}
+&=
+T^n+\Delta t
+\sum_{s=1}^{m}b_s k_s,
+\label{eq:rk_implementation_update}
+\end{align}
+where $a_{sr}$ and $b_s$ are the Runge--Kutta coefficients,
+and $T^{(1)}=T^n$. These general expressions correspond to
+the specific stage equations and updates given in
+Equations~\eqref{eq:rk2_k1}--\eqref{eq:rk2_update} for RK2
+and Equations~\eqref{eq:rk4_k1}--\eqref{eq:rk4_update}
+for RK4.
+
+The implementation advances only the physical-cell
+temperatures explicitly. At each stage, a copy of the
+current temperature field is created, and the intermediate
+stage contributions are added to its physical cells.
+The temperature boundary conditions are then reapplied
+before evaluating the spatial right-hand side. This ensures
+that the ghost-cell values are consistent with the boundary
+conditions at every stage.
+
+After all stages have been evaluated, their right-hand sides
+are combined using the coefficients $b_s$ to update the
+physical-cell temperatures. The boundary conditions are
+reapplied once more to obtain a consistent updated
+temperature field.
+
+\begin{algorithm}[H]
+\caption{One Explicit Runge--Kutta Time Step}
+\label{alg:rk_single_step}
+\begin{algorithmic}[1]
+\Require Temperature field $T^n$, time step $\Delta t$,
+Runge--Kutta coefficients $a_{sr},b_s$, velocity fields
+$u,v$, and spatial-operator parameters
+\Ensure Updated temperature field $T^{n+1}$
+
+\State Apply the temperature boundary conditions to $T^n$
+\State Initialize an empty list of stage right-hand sides
+
+\For{$s=1,\ldots,m$}
+    \State Set $T^{(s)}\gets T^n$
+    \If{$s>1$}
+        \State Construct the intermediate stage using
+        Equation~\eqref{eq:rk_implementation_stages}
+        using only physical-cell values
+    \EndIf
+    \State Apply the temperature boundary conditions to $T^{(s)}$
+    \State Evaluate $k_s$ using
+    Equation~\eqref{eq:rk_implementation_rhs}
+    \State Store $k_s$ in the stage right-hand-side list
+\EndFor
+
+\State Initialize the total increment to zero
+\For{$s=1,\ldots,m$}
+    \State Add $b_s k_s$ to the total increment
+    over physical cells
+\EndFor
+\State Update the physical-cell temperatures using
+Equation~\eqref{eq:rk_implementation_update}
+\State Apply the temperature boundary conditions to $T^{n+1}$
+\State \Return $T^{n+1}$
+\end{algorithmic}
+\end{algorithm}
+
+For the explicit midpoint method, the solver uses two stages,
+with coefficients $a_{21}=1/2$ and $b_1=0$, $b_2=1$.
+For classical RK4, four stages are used, with
+\[
+\begin{gathered}
+a_{21}=\frac12,\qquad
+a_{32}=\frac12,\qquad
+a_{43}=1,\\
+b_1=\frac16,\qquad
+b_2=\frac13,\qquad
+b_3=\frac13,\qquad
+b_4=\frac16.
+\end{gathered}
+\]
+Thus, the two methods differ only in their stage coefficients
+and the number of right-hand-side evaluations required per
+iteration.
+
+\subsubsection{Pseudo-Time Marching and Convergence}
+
+The solver repeatedly advances the temperature field by one
+Runge--Kutta step until the steady-state residual reaches the
+specified tolerance or the maximum number of iterations is
+exceeded. Before iteration begins, the initial temperature
+field is checked for compatibility with the expected array
+dimensions and the temperature boundary conditions are
+applied.
+
+After each complete time step, the RMS residual is evaluated
+using Equation~\eqref{eq:steady_residual_rms}. The iteration
+number and residual are recorded, and temperature snapshots
+are stored at the specified interval. The initial field is
+stored at iteration zero, and the final field is included
+even when the final iteration does not coincide with a
+snapshot interval.
+
+The convergence criterion is
+\begin{equation}
+\boxed{
+R_{\mathrm{RMS}}\leq\varepsilon,
+\qquad \varepsilon=10^{-12}.
+}
+\label{eq:rk_convergence_criterion}
+\end{equation}
+The computation time is measured over the pseudo-time
+iteration loop. If the residual tolerance is not reached
+within the prescribed maximum number of iterations, a
+warning is issued and the final computed solution and
+diagnostic histories are returned.
+
+\begin{algorithm}[H]
+\caption{Runge--Kutta Pseudo-Time Marching to Steady State}
+\label{alg:rk_complete_solver}
+\begin{algorithmic}[1]
+\Require Initial temperature $T^0$, time step $\Delta t$,
+Runge--Kutta coefficients $a_{sr},b_s$, residual tolerance
+$\varepsilon$, maximum iterations $N_{\max}$, and snapshot
+interval $N_s$
+\Ensure Final temperature field $T$, iteration and residual
+histories, computation time, and temperature snapshots
+
+\State Validate the time step, iteration limit, snapshot interval,
+stage coefficients, and initial field dimensions
+\State Apply the temperature boundary conditions to $T^0$
+\State Initialize iteration and residual histories as empty
+\State Store $T^0$ as the initial snapshot at iteration $0$
+\State Start the computation timer
+\State $\mathrm{converged}\gets\mathrm{false}$
+
+\For{$n=1,\ldots,N_{\max}$}
+    \State Advance $T$ by one Runge--Kutta step using
+    Algorithm~\ref{alg:rk_single_step}
+    \State Evaluate $R_{\mathrm{RMS}}$ using
+    Equation~\eqref{eq:steady_residual_rms}
+    \State Append $n$ to the iteration history
+    \State Append $R_{\mathrm{RMS}}$ to the residual history
+
+    \If{$n\bmod N_s=0$}
+        \State Store the current temperature field as a snapshot
+        \State Record snapshot iteration $n$
+    \EndIf
+
+    \If{$R_{\mathrm{RMS}}\leq\varepsilon$}
+        \State $\mathrm{converged}\gets\mathrm{true}$
+        \State \textbf{break}
+    \EndIf
+\EndFor
+
+\State Stop the timer and calculate computation time
+
+\If{the final iteration is not already stored as a snapshot}
+    \State Store the final temperature field and iteration
+\EndIf
+
+\If{not converged}
+    \State Issue a warning that the residual tolerance was
+    not reached within $N_{\max}$ iterations
+\EndIf
+
+\State \Return $T$, iteration history, residual history,
+computation time, temperature snapshots, and snapshot iterations
+\end{algorithmic}
+\end{algorithm}
+
+The RK2 and RK4 implementations therefore share the same
+boundary-condition treatment, residual evaluation, convergence
+criterion, and snapshot procedure. Their main differences
+are the number of stages and the associated Runge--Kutta
+coefficients. Both methods are explicit and conditionally
+stable; consequently, the pseudo-time step must be selected
+to maintain numerical stability while allowing efficient
+convergence to the steady solution.

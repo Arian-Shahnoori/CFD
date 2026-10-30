@@ -1,0 +1,459 @@
+\subsection{Direct Sparse Solver Implementation}
+\label{subsec:direct_implementation}
+
+The direct solver is implemented through three main procedures:
+assembly of the sparse spatial matrix, construction of the
+forcing vector, and implicit pseudo-time integration. Unlike
+the APF and Runge--Kutta implementations, which retain ghost
+cells in the temperature array during the solution process,
+the direct solver eliminates ghost-cell temperatures from
+the linear-system unknowns by substituting the boundary
+relations directly into the discretized equations.
+
+\subsubsection{Sparse Spatial Matrix Assembly}
+
+The function \texttt{build\_spatial\_matrix} constructs the
+sparse matrix $\mathbf{A}$ in
+Equation~\eqref{eq:direct_semidiscrete}. The matrix is initially
+stored in the list-of-lists (LIL) format, which facilitates
+incremental insertion of its coefficients, and is converted
+to compressed sparse row (CSR) format after assembly.
+
+The grid spacings and diffusion coefficients are calculated as
+\begin{equation}
+\Delta x=\frac{L_x}{n_x},
+\qquad
+\Delta y=\frac{L_y}{n_y},
+\qquad
+D_x=\frac{1}{\mathrm{Pe}\,\Delta x^2},
+\qquad
+D_y=\frac{1}{\mathrm{Pe}\,\Delta y^2}.
+\label{eq:direct_implementation_coefficients}
+\end{equation}
+
+For each physical cell $(i,j)$, the spatial operator can be
+written in the five-point stencil form
+\begin{equation}
+\begin{aligned}
+\mathcal{L}_{ij}(T)
+={}&a_P^{(0)}T_{ij}
++a_E T_{i+1,j}
++a_W T_{i-1,j}\\
+&+a_N T_{i,j+1}
++a_S T_{i,j-1}+S_{ij},
+\end{aligned}
+\label{eq:direct_five_point_stencil}
+\end{equation}
+where $a_P^{(0)}$ is the initial diagonal coefficient,
+$a_E,a_W,a_N,a_S$ are the coefficients of the neighbouring
+cells, and $S_{ij}$ is the viscous-dissipation source term.
+The coefficients are obtained from the central-difference
+discretization:
+\begin{align}
+a_E
+&=D_x-\frac{\alpha_c u_{i+1,j}}{2\Delta x},
+\label{eq:direct_coefficient_east}
+\\
+a_W
+&=D_x+\frac{\alpha_c u_{i-1,j}}{2\Delta x},
+\label{eq:direct_coefficient_west}
+\\
+a_N
+&=D_y-\frac{\alpha_c v_{i,j+1}}{2\Delta y},
+\label{eq:direct_coefficient_north}
+\\
+a_S
+&=D_y+\frac{\alpha_c v_{i,j-1}}{2\Delta y},
+\label{eq:direct_coefficient_south}
+\\
+a_P^{(0)}
+&=-2(D_x+D_y).
+\label{eq:direct_initial_diagonal}
+\end{align}
+Here, $\alpha_c$ is the convection coefficient, which defaults
+to unity. The source term is independent of temperature
+because the velocity field is prescribed; it is therefore
+assembled into the forcing vector rather than the matrix
+$\mathbf{A}$.
+
+For an interior cell, the coefficients of neighbouring
+physical-cell temperatures are inserted into the corresponding
+matrix entries. For example, $a_E$ multiplies the temperature
+of the cell immediately to the east, $T_{i+1,j}$, so it is
+placed in the matrix column corresponding to that cell. The
+same procedure applies to the west, north, and south
+neighbours.
+
+At a boundary, however, the neighbouring cell may be a ghost
+cell whose temperature is determined by the boundary condition
+rather than being an independent unknown. Its contribution
+must therefore be substituted into the discrete equation
+before the matrix is assembled. This substitution can modify
+the diagonal coefficient and introduce a constant contribution
+to the forcing vector.
+
+\paragraph{Elimination of ghost-cell contributions.}
+
+At the outlet, the zero-gradient condition gives
+\begin{equation}
+T_{\mathrm{GC}}=T_{\mathrm{BC}},
+\label{eq:direct_outlet_ghost}
+\end{equation}
+where $T_{\mathrm{BC}}$ denotes the adjacent physical-cell
+temperature. Therefore, the east-neighbour contribution from Equation~\eqref{eq:direct_five_point_stencil}
+becomes
+\begin{equation}
+a_E T_{\mathrm{GC}}=a_E T_{\mathrm{BC}}.
+\label{eq:direct_outlet_contribution}
+\end{equation}
+The ghost-cell temperature is replaced by the same physical
+temperature already multiplying the diagonal coefficient.
+Consequently, $a_E$ is added to the diagonal:
+\begin{equation}
+A_{k,k}\gets A_{k,k}+a_E.
+\label{eq:direct_outlet_diagonal}
+\end{equation}
+This boundary condition introduces no additional constant
+term into the forcing vector.
+
+At a prescribed-temperature boundary, the ghost-cell relation is
+\begin{equation}
+T_{\mathrm{GC}}=2T_B-T_{\mathrm{BC}},
+\label{eq:direct_dirichlet_ghost}
+\end{equation}
+where $T_B$ is the prescribed boundary temperature. Substituting
+this relation into a neighbouring-cell contribution gives
+\begin{equation}
+\boxed{
+a_{\mathrm{BC}}T_{\mathrm{GC}}
+=
+-a_{\mathrm{BC}}T_{\mathrm{BC}}
++2a_{\mathrm{BC}}T_B.
+}
+\label{eq:direct_dirichlet_contribution}
+\end{equation}
+The first term on the right-hand side is proportional to the
+adjacent physical-cell temperature. Its coefficient is
+therefore added to the diagonal with the opposite sign:
+\begin{equation}
+A_{k,k}\gets A_{k,k}-a_{\mathrm{BC}}.
+\label{eq:direct_dirichlet_diagonal}
+\end{equation}
+The second term is independent of the unknown temperatures
+and is incorporated into the forcing vector.
+
+For example, at the inlet,
+\begin{equation}
+a_W T_{0,j}
+=
+-a_W T_{1,j}
++2a_W T_{\mathrm{in}}(y_j),
+\end{equation}
+so the west-neighbour coefficient is subtracted from the
+diagonal, while the prescribed inlet-temperature contribution
+is included in the forcing vector. The same procedure is
+applied at the bottom and top walls using their prescribed
+temperatures.
+
+Consequently, the diagonal coefficient of a boundary cell
+is not simply the initial value $a_P^{(0)}$. It is modified
+by the contributions of any neighbouring ghost cells that
+are eliminated through the boundary relations. At a corner
+cell, the modifications associated with both adjoining
+boundaries are applied. These substitutions preserve the
+discretized governing equation while restricting the unknown
+vector to the physical-cell temperatures.
+
+The two-dimensional cell indices are mapped to a one-dimensional
+index according to
+Equation~\eqref{eq:direct_vector_index}:
+\begin{equation}
+k(i,j)=i n_y+j,
+\qquad
+0\leq i<n_x,\quad 0\leq j<n_y.
+\label{eq:direct_implementation_index}
+\end{equation}
+This ordering corresponds to flattening the physical temperature
+array using \texttt{ravel(order="C")}, with the wall-normal
+index varying fastest.
+
+The matrix assembly procedure is summarized in
+Algorithm~\ref{alg:direct_matrix_assembly}.
+
+\begin{algorithm}[H]
+\caption{Assembly of the Sparse Spatial Matrix}
+\label{alg:direct_matrix_assembly}
+\begin{algorithmic}[1]
+\Require Mesh dimensions $n_x,n_y$, domain lengths $L_x,L_y$,
+Peclet number $\mathrm{Pe}$, velocity fields $u,v$, and
+convection coefficient $\alpha_c$
+\Ensure Sparse spatial matrix $\mathbf{A}$
+
+\State Calculate $\Delta x,\Delta y,D_x,D_y$ using
+Equation~\eqref{eq:direct_implementation_coefficients}
+\State Initialize $\mathbf{A}$ as an $n_xn_y\times n_xn_y$
+zero matrix in LIL format
+
+\For{$i=0,\ldots,n_x-1$}
+    \For{$j=0,\ldots,n_y-1$}
+        \State Map to velocity-array indices:
+        $I\gets i+1$, $J\gets j+1$
+        \State $k\gets i n_y+j$
+        \State Calculate $a_E,a_W,a_N,a_S$ using
+        Equations~\eqref{eq:direct_coefficient_east}
+        --\eqref{eq:direct_coefficient_south}
+        \State $A_{k,k}\gets a_P^{(0)}$
+
+        \If{$i<n_x-1$}
+            \State $A_{k,k+n_y}\gets
+            A_{k,k+n_y}+a_E$
+        \Else
+            \State $A_{k,k}\gets A_{k,k}+a_E$
+            \Comment{Zero-gradient outlet}
+        \EndIf
+
+        \If{$i>0$}
+            \State $A_{k,k-n_y}\gets
+            A_{k,k-n_y}+a_W$
+        \Else
+            \State $A_{k,k}\gets A_{k,k}-a_W$
+            \Comment{Prescribed inlet temperature}
+        \EndIf
+
+        \If{$j<n_y-1$}
+            \State $A_{k,k+1}\gets A_{k,k+1}+a_N$
+        \Else
+            \State $A_{k,k}\gets A_{k,k}-a_N$
+            \Comment{Top wall}
+        \EndIf
+
+        \If{$j>0$}
+            \State $A_{k,k-1}\gets A_{k,k-1}+a_S$
+        \Else
+            \State $A_{k,k}\gets A_{k,k}-a_S$
+            \Comment{Bottom wall}
+        \EndIf
+    \EndFor
+\EndFor
+
+\State Convert $\mathbf{A}$ to CSR format
+\State \Return $\mathbf{A}$
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection{Construction of the Forcing Vector}
+
+The function \texttt{build\_forcing\_field} constructs the
+temperature-independent vector $\mathbf{b}$ in
+Equation~\eqref{eq:direct_semidiscrete}. Rather than assembling
+each boundary and source contribution separately, it evaluates
+the existing spatial operator with all physical-cell
+temperatures set to zero while retaining the prescribed
+boundary conditions.
+
+Accordingly, the forcing vector is defined as
+\begin{equation}
+\boxed{
+\mathbf{b}=\mathcal{L}(\mathbf{0}).
+}
+\label{eq:direct_implementation_forcing}
+\end{equation}
+A zero-valued temperature array, including ghost cells, is
+first initialized. The temperature boundary conditions are
+then applied, giving the appropriate ghost-cell values for
+the zero physical-cell field. The function evaluates the
+right-hand side using \texttt{build\_rhs} for each physical
+wall-normal index and copies the residual values at the
+physical streamwise cells into the corresponding column of
+the forcing field.
+
+The field is finally flattened in C order to match the
+ordering used by the spatial matrix. The resulting vector
+contains the constant contributions from prescribed boundary
+temperatures and the viscous-dissipation source. The outlet
+condition adds no independent constant contribution because
+its ghost-cell temperature equals the adjacent physical-cell
+temperature.
+
+\begin{algorithm}[H]
+\caption{Construction of the Forcing Vector}
+\label{alg:direct_forcing_assembly}
+\begin{algorithmic}[1]
+\Require Mesh dimensions $n_x,n_y$, inlet-temperature profile,
+parameters $\mathrm{Pe},\mathrm{Br}$, velocity fields $u,v$,
+domain dimensions $L_x,L_y$, and convection coefficient $\alpha_c$
+\Ensure Forcing vector $\mathbf{b}$
+
+\State Initialize a zero temperature array including ghost cells
+\State Apply the temperature boundary conditions
+\State Initialize an $n_x\times n_y$ forcing field $\mathbf{B}$
+
+\For{$j=1,\ldots,n_y$}
+    \State Evaluate the discrete right-hand side using
+    \texttt{build\_rhs} at wall-normal index $j$
+    \State Copy its physical streamwise entries into
+    column $j$ of $\mathbf{B}$
+\EndFor
+
+\State Flatten $\mathbf{B}$ in C order to obtain $\mathbf{b}$
+\State \Return $\mathbf{b}$
+\end{algorithmic}
+\end{algorithm}
+
+Combining the spatial matrix and forcing vector gives
+\begin{equation}
+\frac{\mathrm{d}\mathbf{T}}{\mathrm{d}t}
+=
+\mathbf{A}\mathbf{T}+\mathbf{b}.
+\end{equation}
+Because the velocity field is fixed and the boundary
+relations are linear, the discretized spatial operator is
+affine in the physical-cell temperatures and can be represented
+by this matrix-vector form.
+
+\subsubsection{Implicit Euler Integration and Sparse LU Factorization}
+
+The function \texttt{solve\_with\_direct} advances the
+semi-discrete system using implicit Euler pseudo-time integration.
+As derived in Equation~\eqref{eq:direct_implicit_euler},
+the temperature update satisfies
+\begin{equation}
+\boxed{
+\left(\mathbf{I}-\Delta t\,\mathbf{A}\right)
+\mathbf{T}^{n+1}
+=
+\mathbf{T}^{n}+\Delta t\,\mathbf{b}.
+}
+\label{eq:direct_implementation_update}
+\end{equation}
+Defining
+\begin{equation}
+\mathbf{M}=\mathbf{I}-\Delta t\,\mathbf{A},
+\label{eq:direct_implementation_matrix}
+\end{equation}
+the update is obtained by solving
+\begin{equation}
+\mathbf{M}\mathbf{T}^{n+1}
+=
+\mathbf{T}^{n}+\Delta t\,\mathbf{b}.
+\end{equation}
+
+After assembling $\mathbf{A}$ and $\mathbf{b}$, the solver
+converts $\mathbf{M}$ to compressed sparse column (CSC)
+format and factorizes it once using the sparse LU routine
+\texttt{splu}. The factorization is reused throughout the
+pseudo-time iteration because the matrix remains unchanged
+when the grid, time step, velocity field, and boundary
+conditions are fixed.
+
+At each iteration, the current physical-cell temperature
+array is flattened in C order and used to form the right-hand
+side $\mathbf{T}^{n}+\Delta t\,\mathbf{b}$. The factorized
+matrix object's \texttt{solve} method returns the updated
+temperature vector directly, without requiring the matrix to
+be factorized again. The new vector is reshaped to an
+$n_x\times n_y$ array in C order and inserted into the
+physical portion of the full temperature field. The ghost-cell
+values are subsequently reconstructed by applying the
+temperature boundary conditions.
+
+This procedure is repeated until the RMS residual reaches
+the prescribed tolerance or the maximum iteration count is
+reached. At every iteration, the solver checks that the
+updated physical-cell temperatures are finite, evaluates
+the residual using Equation~\eqref{eq:steady_residual_rms},
+and records the iteration number and residual. Temperature
+snapshots are saved at the specified interval, at convergence,
+or at the final permitted iteration. Computation time includes
+matrix construction, factorization, and pseudo-time marching.
+
+\begin{algorithm}[H]
+\caption{Direct Sparse Solver with Reusable LU Factorization}
+\label{alg:direct_complete_solver}
+\begin{algorithmic}[1]
+\Require Initial temperature $T^0$, time step $\Delta t$,
+mesh dimensions $n_x,n_y$, boundary conditions, parameters
+$\mathrm{Pe},\mathrm{Br}$, residual tolerance $\varepsilon$,
+maximum iterations $N_{\max}$, and snapshot interval $N_s$
+\Ensure Final temperature field, iteration and residual histories,
+computation time, and temperature snapshots
+
+\State Validate the time step, iteration limit, snapshot interval,
+and initial temperature dimensions
+\State Apply the temperature boundary conditions to $T^0$
+\State Construct $\mathbf{A}$ using
+Algorithm~\ref{alg:direct_matrix_assembly}
+\State Construct $\mathbf{b}$ using
+Algorithm~\ref{alg:direct_forcing_assembly}
+\State Form $\mathbf{M}=\mathbf{I}-\Delta t\,\mathbf{A}$
+using Equation~\eqref{eq:direct_implementation_matrix}
+\State Convert $\mathbf{M}$ to CSC format and factorize it once
+using sparse LU factorization
+\State Extract the physical-cell temperatures into
+$\mathbf{T}^0$ using C-order flattening
+\State Initialize iteration and residual histories
+\State Store $T^0$ as the initial snapshot at iteration $0$
+\State Start the computation timer
+
+\For{$n=1,\ldots,N_{\max}$}
+    \State $\mathbf{q}\gets
+    \mathbf{T}^{n-1}+\Delta t\,\mathbf{b}$
+    \State Solve $\mathbf{M}\mathbf{T}^{n}=\mathbf{q}$
+    using the previously factorized matrix
+    \State Check that all components of $\mathbf{T}^{n}$
+    are finite; raise an error otherwise
+    \State Reshape $\mathbf{T}^{n}$ in C order and insert it
+    into the physical cells of the temperature array
+    \State Apply the temperature boundary conditions
+    \State Evaluate $R_{\mathrm{RMS}}$ using
+    Equation~\eqref{eq:steady_residual_rms}
+    \State Record the iteration number and residual
+
+    \If{$n\bmod N_s=0$ or $n=N_{\max}$ or
+    $(\varepsilon>0\text{ and }
+    R_{\mathrm{RMS}}\leq\varepsilon)$}
+        \State Store the current temperature field as a snapshot
+        \State Record snapshot iteration $n$
+    \EndIf
+
+    \If{$\varepsilon>0$ and
+    $R_{\mathrm{RMS}}\leq\varepsilon$}
+        \State \textbf{break}
+    \EndIf
+\EndFor
+
+\State Stop the timer and calculate computation time
+\State \Return final temperature field, histories,
+computation time, and snapshots
+\end{algorithmic}
+\end{algorithm}
+
+The direct solver therefore combines the sparse representation
+of the spatial operator with implicit Euler pseudo-time marching
+and a reusable sparse LU factorization. Eliminating ghost-cell
+unknowns keeps the linear system restricted to the physical
+temperatures, while incorporating their effects through
+modified boundary-cell coefficients and the forcing vector.
+Reusing the factorization avoids repeating matrix construction
+and factorization at every iteration, although each time step
+still requires a sparse triangular solve.
+
+\subsubsection{Verification of the Direct Solver}
+\label{subsubsec:direct_verification}
+
+The direct solver implementation was examined through several
+verification tests. First, the assembled sparse matrix and
+forcing vector were checked against the original spatial
+operator by evaluating the residual independently using
+\texttt{build\_rhs} and comparing it with
+$\mathbf{A}\mathbf{T}+\mathbf{b}$ for an arbitrary temperature
+field. Second, the accuracy of the implicit Euler linear-system
+solution was verified by evaluating the algebraic residual
+$\mathbf{M}\mathbf{T}^{n+1}-(\mathbf{T}^{n}+\Delta t\,\mathbf{b})$.
+Third, the converged temperature fields obtained using the
+direct and APF methods were compared on the same grid and
+under identical initial and boundary conditions, using the
+relative $L_2$ difference and maximum absolute difference.
+Additionally, a time-step test was implemented to examine
+the convergence behaviour, residual evolution, and computational
+cost of the direct solver for different pseudo-time steps.

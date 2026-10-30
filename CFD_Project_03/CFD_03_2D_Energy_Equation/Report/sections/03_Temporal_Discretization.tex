@@ -1,0 +1,686 @@
+\section{Temporal Discretization}
+\label{sec:temporal_discretization}
+
+\subsection{Approximate Factorization}
+\label{subsec:approximate_factorization}
+
+\subsubsection{Implicit Euler Discretization}
+
+Following the spatial discretization presented in the previous
+section, the energy equation can be expressed as a system of
+ordinary differential equations:
+\begin{equation}
+\frac{dT_{ij}}{dt}=FI_{ij}+S_{ij}=RHS_{ij},
+\label{eq:semi_discrete_energy}
+\end{equation}
+where $FI_{ij}$ denotes the combined advective and diffusive
+contributions, and $S_{ij}$ is the viscous-dissipation source
+term. The cell-centered temperature is denoted by $T_{ij}$,
+with the control-volume average represented by the same quantity
+under the present second-order approximation.
+
+The implicit Euler method approximates the temporal derivative
+using a backward difference and evaluates the spatial operator
+at the next time level:
+\begin{equation}
+\frac{T_{ij}^{n+1}-T_{ij}^{n}}{\Delta t}
+=
+FI_{ij}^{n+1}+S_{ij}^{n+1}.
+\label{eq:implicit_euler}
+\end{equation}
+Here, $n$ and $n+1$ denote the current and next time levels,
+respectively, and $\Delta t$ is the time step. Since the
+velocity field is prescribed in the present problem, the
+viscous-dissipation source term is independent of temperature
+and can be evaluated directly from the velocity gradients.
+
+Substituting the spatially discretized expression into
+Equation~\eqref{eq:implicit_euler} gives
+\begin{equation}
+\begin{aligned}
+\frac{T_{ij}^{n+1}-T_{ij}^{n}}{\Delta t}
+={}&
+-\frac{
+u_{i+1,j}T_{i+1,j}^{n+1}
+-u_{i-1,j}T_{i-1,j}^{n+1}
+}{2\Delta x}
+\\[0.15cm]
+&+
+\frac{1}{\mathrm{Re}\,\mathrm{Pr}}
+\frac{
+T_{i+1,j}^{n+1}-2T_{ij}^{n+1}
++T_{i-1,j}^{n+1}
+}{\Delta x^2}
+\\[0.15cm]
+&-
+\frac{
+v_{i,j+1}T_{i,j+1}^{n+1}
+-v_{i,j-1}T_{i,j-1}^{n+1}
+}{2\Delta y}
+\\[0.15cm]
+&+
+\frac{1}{\mathrm{Re}\,\mathrm{Pr}}
+\frac{
+T_{i,j+1}^{n+1}-2T_{ij}^{n+1}
++T_{i,j-1}^{n+1}
+}{\Delta y^2}
++S_{ij}.
+\end{aligned}
+\label{eq:implicit_euler_expanded}
+\end{equation}
+
+Although the implicit Euler method provides a direct temporal
+discretization, Equation~\eqref{eq:implicit_euler_expanded}
+couples the unknown temperatures at the next time level.
+Solving the resulting system simultaneously for all control
+volumes can be computationally expensive. The approximate
+factorization method addresses this difficulty by splitting
+the two-dimensional operator into directional operators,
+allowing the solution to be obtained through successive
+one-dimensional solves.
+
+\subsubsection{Delta Formulation}
+
+To formulate the approximate factorization method, the
+temperature update between successive time levels is defined as
+\begin{equation}
+\delta T_{ij}^{n+1}
+=
+T_{ij}^{n+1}-T_{ij}^{n}.
+\label{eq:temperature_update}
+\end{equation}
+Thus, the temperature at the next time level can be written as
+\begin{equation}
+T_{ij}^{n+1}=T_{ij}^{n}+\delta T_{ij}^{n+1}.
+\label{eq:temperature_update_relation}
+\end{equation}
+
+Substituting Equation~\eqref{eq:temperature_update_relation}
+into the implicit Euler equation and separating the terms
+involving the unknown update from those evaluated at the
+current time level yields
+\begin{equation}
+\begin{aligned}
+\frac{\delta T_{ij}^{n+1}}{\Delta t}
++\left(\mathcal{X}\delta T^{n+1}\right)_{ij}
++\left(\mathcal{Y}\delta T^{n+1}\right)_{ij}
+=
+RHS_{ij}^{n},
+\end{aligned}
+\label{eq:delta_form}
+\end{equation}
+where
+\begin{equation}
+RHS_{ij}^{n}=FI_{ij}^{n}+S_{ij}.
+\label{eq:rhs_old_time}
+\end{equation}
+Here, $FI_{ij}^{n}$ is evaluated using the temperature field
+at time level $n$, and $S_{ij}$ is the prescribed
+viscous-dissipation source term.
+
+The directional operators $\mathcal{X}$ and $\mathcal{Y}$
+contain the advective and diffusive contributions in the
+$x$- and $y$-directions, respectively. They are defined by
+\begin{equation}
+\begin{aligned}
+\left(\mathcal{X}T\right)_{ij}
+={}&
+\frac{
+u_{i+1,j}T_{i+1,j}
+-u_{i-1,j}T_{i-1,j}
+}{2\Delta x}
+\\
+&-
+\frac{1}{\mathrm{Re}\,\mathrm{Pr}}
+\frac{
+T_{i+1,j}-2T_{ij}+T_{i-1,j}
+}{\Delta x^2},
+\end{aligned}
+\label{eq:x_operator}
+\end{equation}
+and
+\begin{equation}
+\begin{aligned}
+\left(\mathcal{Y}T\right)_{ij}
+={}&
+\frac{
+v_{i,j+1}T_{i,j+1}
+-v_{i,j-1}T_{i,j-1}
+}{2\Delta y}
+\\
+&-
+\frac{1}{\mathrm{Re}\,\mathrm{Pr}}
+\frac{
+T_{i,j+1}-2T_{ij}+T_{i,j-1}
+}{\Delta y^2}.
+\end{aligned}
+\label{eq:y_operator}
+\end{equation}
+With these definitions, the non-source part of the spatial
+operator satisfies
+\begin{equation}
+FI_{ij}
+=
+-\left(\mathcal{X}T\right)_{ij}
+-\left(\mathcal{Y}T\right)_{ij}.
+\label{eq:fi_operator_relation}
+\end{equation}
+
+Multiplying Equation~\eqref{eq:delta_form} by $\Delta t$
+gives
+\begin{equation}
+\left(
+I+\Delta t\,\mathcal{X}
++\Delta t\,\mathcal{Y}
+\right)\delta T^{n+1}
+=
+\Delta t\,RHS^n,
+\label{eq:implicit_delta_operator}
+\end{equation}
+where $I$ denotes the identity operator. This equation is
+the operator form of the implicit Euler update. Directly
+solving it requires a coupled two-dimensional system because
+both directional operators act on the unknown temperature
+update.
+
+\subsubsection{Approximate Factorization}
+
+The approximate factorization method replaces the combined
+operator in Equation~\eqref{eq:implicit_delta_operator}
+with a product of two directional operators:
+\begin{equation}
+\boxed{
+\left(I+\Delta t\,\mathcal{X}\right)
+\left(I+\Delta t\,\mathcal{Y}\right)
+\delta T^{n+1}
+=
+\Delta t\,RHS^n.
+}
+\label{eq:approximate_factorization}
+\end{equation}
+
+Expanding the product on the left-hand side gives
+\begin{equation}
+\begin{aligned}
+\Big[
+I+\Delta t\,\mathcal{X}
++\Delta t\,\mathcal{Y}
++\Delta t^2\mathcal{X}\mathcal{Y}
+\Big]\delta T^{n+1}
+=
+\Delta t\,RHS^n.
+\end{aligned}
+\label{eq:factorization_expanded}
+\end{equation}
+
+Comparing Equation~\eqref{eq:factorization_expanded} with
+Equation~\eqref{eq:implicit_delta_operator} shows that
+the factorized formulation introduces the additional
+cross term
+\begin{equation}
+\Delta t^2\mathcal{X}\mathcal{Y}\delta T^{n+1}.
+\label{eq:factorization_error_term}
+\end{equation}
+This term is proportional to $\Delta t^2$. The approximation
+is therefore reasonable when the time step is sufficiently
+small for the additional factorization term to remain
+acceptable. However, the temporal accuracy of the underlying
+implicit Euler method remains first-order.
+
+The main advantage of this approximation is computational.
+Instead of solving one coupled two-dimensional system, the
+factorized equation can be solved through two successive
+directional systems. This procedure is commonly implemented
+using an alternating-direction implicit (ADI) strategy.
+
+\subsubsection{Alternating-Direction Implicit Solution}
+
+To solve Equation~\eqref{eq:approximate_factorization}
+sequentially, an intermediate temperature update
+$\widetilde{\delta T}^{\,n+1}$ is introduced as
+\begin{equation}
+\widetilde{\delta T}^{\,n+1}
+=
+\left(I+\Delta t\,\mathcal{Y}\right)
+\delta T^{n+1}.
+\label{eq:intermediate_update}
+\end{equation}
+
+Substituting this definition into
+Equation~\eqref{eq:approximate_factorization} yields
+the first directional system:
+\begin{equation}
+\boxed{
+\left(I+\Delta t\,\mathcal{X}\right)
+\widetilde{\delta T}^{\,n+1}
+=
+\Delta t\,RHS^n.
+}
+\label{eq:adi_step_x}
+\end{equation}
+After solving for the intermediate update, the second
+directional system is solved:
+\begin{equation}
+\boxed{
+\left(I+\Delta t\,\mathcal{Y}\right)
+\delta T^{n+1}
+=
+\widetilde{\delta T}^{\,n+1}.
+}
+\label{eq:adi_step_y}
+\end{equation}
+
+The first step treats the $x$-direction operator implicitly,
+while the second treats the $y$-direction operator
+implicitly. Since each directional operator couples a
+cell only to its immediate neighbors along one coordinate
+direction, the resulting linear systems have tridiagonal
+coefficient matrices along the respective grid lines.
+These systems can be solved efficiently using a
+tridiagonal matrix algorithm.
+
+Finally, after obtaining the temperature update, the
+temperature field is advanced according to
+\begin{equation}
+\boxed{
+T_{ij}^{n+1}=T_{ij}^{n}+\delta T_{ij}^{n+1}.
+}
+\label{eq:temperature_update_final}
+\end{equation}
+
+The approximate factorization method thus reduces the
+solution of a two-dimensional implicit problem to two
+successive one-dimensional solves. When the objective is
+to obtain a steady-state temperature field, this procedure
+can be used for pseudo-time marching until the residual
+falls below the prescribed convergence tolerance.
+
+\paragraph{Treatment of Boundary Conditions}
+
+The ghost-cell relations derived in
+Section~\ref{subsec:ghost_cell_boundary_conditions}, including
+their incremental forms, are incorporated into the directional
+systems before they are solved. Since the unknown is the
+temperature increment $\delta T^{n+1}$, the prescribed inlet
+and wall temperatures lead to homogeneous incremental
+boundary relations, whereas the zero-gradient outlet condition
+requires the ghost-cell increment to equal the adjacent
+physical-cell increment. Substituting these relations into
+the directional operators eliminates ghost-cell increments
+as independent unknowns and modifies the coefficients of
+the corresponding tridiagonal systems. After solving the
+two directional systems successively, the temperature field
+is updated using
+\begin{equation}
+T_{ij}^{n+1}
+=
+T_{ij}^{n}+\delta T_{ij}^{n+1}.
+\end{equation}
+
+\subsection{Explicit Runge--Kutta Methods}
+\label{subsec:runge_kutta}
+
+The spatial discretization of the energy equation yields a system
+of ordinary differential equations of the form
+\begin{equation}
+\frac{dT_{ij}}{dt}=RHS_{ij}(T)=FI_{ij}(T)+S_{ij},
+\label{eq:rk_semidiscrete}
+\end{equation}
+where $FI_{ij}(T)$ represents the discretized advective and
+diffusive contributions, and $S_{ij}$ is the viscous-dissipation
+source term. For convenience, the complete right-hand side is
+denoted by the operator $\mathcal{F}$:
+\begin{equation}
+\mathcal{F}_{ij}(T)=FI_{ij}(T)+S_{ij}.
+\label{eq:rk_rhs_operator}
+\end{equation}
+
+The Runge--Kutta methods advance the solution explicitly by
+evaluating this operator at several intermediate stages within
+each time step. Unlike the approximate factorization method,
+they do not require the solution of implicit linear systems.
+The second- and fourth-order methods considered in this project
+are described below.
+
+\subsubsection{Second-Order Runge--Kutta Method}
+
+The second-order Runge--Kutta method used in this project is
+the explicit midpoint method. It evaluates the right-hand side
+at the beginning of the time step and at an intermediate
+state located halfway through the step.
+
+First, the initial slope is evaluated using the temperature
+field at time level $n$:
+\begin{equation}
+k_{1,ij}=\mathcal{F}_{ij}(T^n).
+\label{eq:rk2_k1}
+\end{equation}
+
+An intermediate temperature field is then constructed using
+a half time step:
+\begin{equation}
+T_{ij}^{(1)}
+=
+T_{ij}^{n}+\frac{\Delta t}{2}k_{1,ij}.
+\label{eq:rk2_intermediate}
+\end{equation}
+
+The right-hand side is evaluated again at this intermediate
+state:
+\begin{equation}
+k_{2,ij}=\mathcal{F}_{ij}\left(T^{(1)}\right).
+\label{eq:rk2_k2}
+\end{equation}
+
+The solution at the next time level is obtained using the
+intermediate slope:
+\begin{equation}
+\boxed{
+T_{ij}^{n+1}
+=
+T_{ij}^{n}+\Delta t\,k_{2,ij}.
+}
+\label{eq:rk2_update}
+\end{equation}
+
+The explicit midpoint method is second-order accurate in
+time. Its use of an intermediate evaluation provides a more
+accurate approximation to the evolution of the solution over
+a time step than the first-order explicit Euler method.
+
+\subsubsection{Fourth-Order Runge--Kutta Method}
+
+The classical fourth-order Runge--Kutta method evaluates
+the right-hand side four times during each time step. These
+evaluations provide estimates of the solution's slope at
+the beginning, at two intermediate states, and at the end
+of the time step.
+
+The first stage evaluates the right-hand side at the
+current temperature field:
+\begin{equation}
+k_{1,ij}=\mathcal{F}_{ij}(T^n).
+\label{eq:rk4_k1}
+\end{equation}
+
+The second stage evaluates it at an intermediate state
+predicted using the first slope:
+\begin{equation}
+k_{2,ij}
+=
+\mathcal{F}_{ij}
+\left(
+T^n+\frac{\Delta t}{2}k_1
+\right).
+\label{eq:rk4_k2}
+\end{equation}
+
+The third stage uses the second slope to construct another
+intermediate state:
+\begin{equation}
+k_{3,ij}
+=
+\mathcal{F}_{ij}
+\left(
+T^n+\frac{\Delta t}{2}k_2
+\right).
+\label{eq:rk4_k3}
+\end{equation}
+
+Finally, the fourth stage evaluates the right-hand side
+at a state predicted over the full time step:
+\begin{equation}
+k_{4,ij}
+=
+\mathcal{F}_{ij}
+\left(
+T^n+\Delta t\,k_3
+\right).
+\label{eq:rk4_k4}
+\end{equation}
+
+The four stage evaluations are combined to obtain the
+updated temperature field:
+\begin{equation}
+\boxed{
+T_{ij}^{n+1}
+=
+T_{ij}^{n}
++\frac{\Delta t}{6}
+\left(
+k_{1,ij}
++2k_{2,ij}
++2k_{3,ij}
++k_{4,ij}
+\right).
+}
+\label{eq:rk4_update}
+\end{equation}
+
+The classical Runge--Kutta method is fourth-order accurate
+in time for sufficiently smooth solutions. Although it
+requires four evaluations of the spatial operator per time
+step, its higher temporal accuracy can be advantageous
+when the time step is sufficiently small and stability
+requirements are satisfied.
+
+\subsection{Direct Sparse Solution}
+\label{subsec:direct_solution}
+
+\subsubsection{Linearization of the Spatial Operator}
+
+The spatially discretized energy equation can be expressed as
+a system of ordinary differential equations:
+\begin{equation}
+\frac{d\mathbf{T}}{dt}
+=
+\mathcal{L}(\mathbf{T}),
+\label{eq:direct_ode}
+\end{equation}
+where $\mathbf{T}$ is the vector of cell-centered temperatures
+and $\mathcal{L}$ denotes the spatial operator, including
+advection, diffusion, and viscous dissipation.
+
+For the direct solver, the spatial operator is written in the
+form
+\begin{align}
+\mathcal{L}_{ij}(T)
+={}&
+-c\frac{
+u_{i+1,j}T_{i+1,j}
+-u_{i-1,j}T_{i-1,j}
+}{2\Delta x}
+\nonumber\\
+&-
+c\frac{
+v_{i,j+1}T_{i,j+1}
+-v_{i,j-1}T_{i,j-1}
+}{2\Delta y}
+\nonumber\\
+&+
+\frac{1}{\mathrm{Pe}}
+\frac{
+T_{i+1,j}-2T_{i,j}+T_{i-1,j}
+}{\Delta x^2}
+\nonumber\\
+&+
+\frac{1}{\mathrm{Pe}}
+\frac{
+T_{i,j+1}-2T_{i,j}+T_{i,j-1}
+}{\Delta y^2}
++S_{ij},
+\label{eq:direct_spatial_operator}
+\end{align}
+where $\mathrm{Pe}$ is the Peclet number, $c$ is the convection
+coefficient, and $S_{ij}$ is the viscous-dissipation source
+term. The velocity field and source term are prescribed and
+independent of temperature. Consequently, the discretized
+spatial operator is linear in the unknown temperatures,
+provided that the boundary conditions are linear.
+
+\subsubsection{Sparse Matrix Formulation}
+
+Collecting the temperatures of the $n_xn_y$ physical cells
+into a vector gives
+\begin{equation}
+\boxed{
+\frac{d\mathbf{T}}{dt}
+=
+\mathbf{A}\mathbf{T}+\mathbf{b},
+}
+\label{eq:direct_semidiscrete}
+\end{equation}
+where $\mathbf{A}$ is the sparse matrix representing the
+linear spatial operator, and $\mathbf{b}$ contains the
+temperature-independent contributions from the boundary
+conditions and viscous dissipation.
+
+The matrix is sparse because each discretized equation
+couples a cell primarily to its immediate neighbors. The
+physical-cell temperature vector is constructed by flattening
+the two-dimensional temperature array in C order, with the
+wall-normal index varying fastest. The corresponding
+zero-based array indices are mapped to the vector index
+\begin{equation}
+k(i,j)=i n_y+j,
+\qquad
+i=0,\ldots,n_x-1,\qquad
+j=0,\ldots,n_y-1.
+\label{eq:direct_vector_index}
+\end{equation}
+
+The forcing vector can be obtained by evaluating the spatial
+operator with all physical-cell temperatures set to zero,
+while retaining the prescribed boundary conditions:
+\begin{equation}
+\boxed{
+\mathbf{b}=\mathcal{L}(\mathbf{0}).
+}
+\label{eq:direct_forcing_vector}
+\end{equation}
+The ghost-cell relations derived in
+Section~\ref{subsec:ghost_cell_boundary_conditions} are substituted
+into the spatially discretized equations before assembling the
+coefficient matrix. This eliminates ghost-cell temperatures as
+independent unknowns. Contributions proportional to physical-cell
+temperatures are incorporated into the matrix $\mathbf{A}$,
+while temperature-independent contributions from prescribed
+boundary values are included in the forcing vector $\mathbf{b}$.
+Consequently, the resulting linear system contains only the
+temperatures of the physical cells.
+
+\subsubsection{Implicit Euler Time Integration}
+
+The semi-discrete system is advanced in pseudo-time using
+the implicit Euler method:
+\begin{equation}
+\frac{\mathbf{T}^{n+1}-\mathbf{T}^{n}}{\Delta t}
+=
+\mathbf{A}\mathbf{T}^{n+1}+\mathbf{b},
+\label{eq:direct_implicit_euler}
+\end{equation}
+where $\Delta t$ denotes the pseudo-time step. Rearranging
+the equation gives the linear system
+\begin{equation}
+\boxed{
+\left(\mathbf{I}-\Delta t\,\mathbf{A}\right)
+\mathbf{T}^{n+1}
+=
+\mathbf{T}^{n}+\Delta t\,\mathbf{b}.
+}
+\label{eq:direct_linear_system}
+\end{equation}
+
+Defining the coefficient matrix as
+\begin{equation}
+\mathbf{M}=\mathbf{I}-\Delta t\,\mathbf{A},
+\label{eq:direct_matrix_definition}
+\end{equation}
+the update becomes
+\begin{equation}
+\mathbf{M}\mathbf{T}^{n+1}
+=
+\mathbf{T}^{n}+\Delta t\,\mathbf{b}.
+\label{eq:direct_matrix_update}
+\end{equation}
+
+When the grid, pseudo-time step, velocity field, model
+parameters, and boundary conditions remain fixed, the matrix
+$\mathbf{M}$ does not change between iterations. Its sparse
+LU factorization can therefore be computed once and reused
+for subsequent time steps:
+\begin{equation}
+\mathbf{M}=\mathbf{L}_{\mathrm{LU}}\mathbf{U}_{\mathrm{LU}}.
+\label{eq:direct_lu_factorization}
+\end{equation}
+At each iteration, the right-hand side is first solved using
+the lower-triangular factor:
+\begin{equation}
+\mathbf{L}_{\mathrm{LU}}\mathbf{y}
+=
+\mathbf{T}^{n}+\Delta t\,\mathbf{b},
+\label{eq:direct_forward_substitution}
+\end{equation}
+followed by the upper-triangular solve
+\begin{equation}
+\mathbf{U}_{\mathrm{LU}}\mathbf{T}^{n+1}
+=
+\mathbf{y}.
+\label{eq:direct_backward_substitution}
+\end{equation}
+
+This procedure uses a direct linear-system solver at each
+time step rather than an iterative method to solve the
+coupled linear equations. Reusing the LU factorization avoids
+repeating the relatively expensive matrix-factorization
+stage during the pseudo-time-marching process.
+
+In summary, the direct solver combines a sparse matrix
+representation of the spatially discretized energy equation
+with implicit Euler pseudo-time marching and a reusable sparse
+LU factorization. This approach provides a reference numerical
+solution against which the approximate factorization and
+explicit Runge--Kutta methods can be compared.
+
+\subsection{Convergence Assessment}
+\label{sec:convergence_assessment}
+
+The objective of the numerical time-marching methods is to obtain
+a steady-state temperature distribution. At steady state, the
+temporal derivative vanishes, and the spatially discretized
+right-hand side approaches zero:
+\begin{equation}
+RHS_{ij}(T)=FI_{ij}(T)+S_{ij}=0.
+\label{eq:steady_state_equation}
+\end{equation}
+
+Convergence is assessed using the root-mean-square (RMS)
+residual of the spatially discretized energy equation over
+the physical cells:
+\begin{equation}
+\boxed{
+R_{\mathrm{RMS}}
+=
+\sqrt{
+\frac{1}{n_xn_y}
+\sum_{i=1}^{n_x}
+\sum_{j=1}^{n_y}
+\left[RHS_{ij}(T)\right]^2
+}.
+}
+\label{eq:rms_residual}
+\end{equation}
+
+This residual provides a common convergence measure for all
+numerical solution methods considered in this project, since
+it evaluates how closely the current temperature field
+satisfies the same discrete steady-state energy equation,
+independently of the temporal integration scheme.
+
+The calculation is terminated when the RMS residual falls
+below a prescribed tolerance or the maximum number of
+iterations is reached. The residual is therefore used to
+assess convergence toward a steady-state numerical solution.
+However, a small residual does not by itself quantify the
+spatial discretization error or establish grid independence;
+these require separate verification studies.

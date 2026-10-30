@@ -1,0 +1,590 @@
+\subsection{Approximate Factorization Method}
+\label{subsec:apf}
+
+The approximate factorization (APF) method advances the
+semi-discrete energy equation in pseudo-time by splitting the
+two-dimensional update into two successive one-dimensional
+linear systems. This approach avoids solving a single
+multidimensional system at every iteration. Instead, the
+resulting systems are tridiagonal and can be solved efficiently
+using the Thomas algorithm.
+
+\subsubsection{Approximate Factorization Formulation}
+
+Let the temperature correction during one pseudo-time step be
+defined as
+\begin{equation}
+\delta T_{ij}
+=
+T_{ij}^{n+1}-T_{ij}^{n},
+\label{eq:apf_temperature_correction}
+\end{equation}
+where $n$ and $n+1$ denote the current and next pseudo-time
+levels, respectively.
+
+The semi-discrete energy equation is written as
+\begin{equation}
+\frac{\mathrm{d}T_{ij}}{\mathrm{d}t}
+=
+\mathcal{L}_x(T)_{ij}
++
+\mathcal{L}_y(T)_{ij}
++
+S_{ij}
+=
+\mathcal{R}_{ij}(T),
+\label{eq:apf_residual}
+\end{equation}
+where $\mathcal{L}_x$ and $\mathcal{L}_y$ represent the
+streamwise and wall-normal transport operators, respectively,
+and $S_{ij}$ is the viscous-dissipation source term. The
+spatial derivatives are approximated using the central
+finite-difference expressions introduced in the previous section.
+
+For compactness, the two spatial operators are expressed as
+\begin{align}
+\mathcal{L}_x(T)_{ij}
+={}&
+-\frac{
+\alpha_c
+\left(
+u_{i+1,j}T_{i+1,j}
+-u_{i-1,j}T_{i-1,j}
+\right)
+}{2\Delta x}
+\nonumber\\
+&+
+\frac{1}{\mathrm{Pe}}
+\frac{
+T_{i+1,j}-2T_{ij}+T_{i-1,j}
+}{\Delta x^2},
+\label{eq:apf_x_operator}
+\\[0.25cm]
+\mathcal{L}_y(T)_{ij}
+={}&
+-\frac{
+\alpha_c
+\left(
+v_{i,j+1}T_{i,j+1}
+-v_{i,j-1}T_{i,j-1}
+\right)
+}{2\Delta y}
+\nonumber\\
+&+
+\frac{1}{\mathrm{Pe}}
+\frac{
+T_{i,j+1}-2T_{ij}+T_{i,j-1}
+}{\Delta y^2},
+\label{eq:apf_y_operator}
+\end{align}
+where
+\begin{equation}
+\mathrm{Pe}=\mathrm{Re}\,\mathrm{Pr},
+\qquad
+\mathrm{Br}=\mathrm{Ec}\,\mathrm{Pr},
+\end{equation}
+and $\alpha_c$ is the convection coefficient used in the
+implementation, with default value $\alpha_c=1$.
+
+The viscous-dissipation source term is evaluated from the
+prescribed velocity field:
+\begin{equation}
+\boxed{
+S_{ij}
+=
+\frac{\mathrm{Br}}{\mathrm{Pe}}
+\left[
+2\left(\frac{\partial u}{\partial x}\right)^2
++
+2\left(\frac{\partial v}{\partial y}\right)^2
++
+\left(
+\frac{\partial v}{\partial x}
++
+\frac{\partial u}{\partial y}
+\right)^2
+\right]_{ij}.
+}
+\label{eq:apf_viscous_source}
+\end{equation}
+The velocity gradients are approximated using central differences.
+Since $\mathrm{Br}/\mathrm{Pe}=\mathrm{Ec}/\mathrm{Re}$,
+Equation~\eqref{eq:apf_viscous_source} is consistent with the
+source term in the governing energy equation.
+
+The residual at the current pseudo-time level is therefore
+\begin{equation}
+\boxed{
+\mathcal{R}_{ij}^{n}
+=
+\mathcal{L}_x(T^n)_{ij}
++
+\mathcal{L}_y(T^n)_{ij}
++
+S_{ij}.
+}
+\label{eq:apf_current_residual}
+\end{equation}
+
+The APF formulation approximates the multidimensional
+correction equation through the factorized system
+\begin{equation}
+\boxed{
+\left(I-\Delta t\,\mathcal{L}_x\right)
+\left(I-\Delta t\,\mathcal{L}_y\right)
+\delta T
+=
+\Delta t\,\mathcal{R}^{n},
+}
+\label{eq:apf_factorized_equation}
+\end{equation}
+where $I$ denotes the identity operator and $\Delta t$ is
+the pseudo-time step. The product of the two operators
+introduces a cross term proportional to $\Delta t^2$.
+Consequently, the factorized equation approximates the
+corresponding unfactorized multidimensional correction equation.
+
+Introducing an intermediate correction
+$\delta\widetilde{T}$, the factorized equation is solved in
+two stages:
+\begin{align}
+\left(I-\Delta t\,\mathcal{L}_x\right)
+\delta\widetilde{T}
+&=
+\Delta t\,\mathcal{R}^{n},
+\label{eq:apf_x_stage}
+\\[0.2cm]
+\left(I-\Delta t\,\mathcal{L}_y\right)
+\delta T
+&=
+\delta\widetilde{T}.
+\label{eq:apf_y_stage}
+\end{align}
+
+The first stage solves for the intermediate correction along
+the streamwise direction. The second stage uses this
+intermediate field to obtain the final correction along the
+wall-normal direction. The temperature is then updated as
+\begin{equation}
+\boxed{
+T_{ij}^{n+1}
+=
+T_{ij}^{n}+\delta T_{ij}.
+}
+\label{eq:apf_temperature_update}
+\end{equation}
+
+\subsubsection{Construction of the Spatial Residual}
+
+The right-hand side of the first factorized system is
+constructed using the function \texttt{build\_rhs}. For each
+physical wall-normal index $j$, this function evaluates the
+streamwise and wall-normal convective and diffusive
+contributions, calculates the viscous-dissipation source,
+and assembles the residual vector.
+
+Defining the transport contribution as
+\begin{equation}
+F_{ij}
+=
+\mathcal{L}_x(T)_{ij}
++
+\mathcal{L}_y(T)_{ij},
+\label{eq:apf_transport_contribution}
+\end{equation}
+the residual is
+\begin{equation}
+\mathcal{R}_{ij}(T)=F_{ij}+S_{ij}.
+\label{eq:apf_residual_assembly}
+\end{equation}
+
+The source term is calculated using Equation~\eqref{eq:apf_viscous_source}. The resulting algorithm corresponds to the implementation
+of \texttt{build\_rhs}.
+
+\begin{algorithm}[H]
+\caption{Construction of the Spatial Residual Vector}
+\label{alg:apf_build_rhs}
+\begin{algorithmic}[1]
+\Require Mesh dimensions $n_x,n_y$, wall-normal index $j$,
+temperature field $T$, velocity fields $u,v$, parameters
+$\mathrm{Pe}$ and $\mathrm{Br}$, domain dimensions $L_x,L_y$,
+and convection coefficient $\alpha_c$
+\Ensure Residual vector $\mathbf{r}^{(j)}$
+\State $\Delta x \gets L_x/n_x$
+\State $\Delta y \gets L_y/n_y$
+\State Initialize $\mathbf{r}^{(j)}$ as a zero vector of
+length $n_x+2$
+\For{$i=1,\ldots,n_x$}
+    \State Evaluate the transport contribution
+    $F_{ij}$ using Equation~\eqref{eq:apf_transport_contribution}
+    \State Calculate the four velocity gradients using
+    central differences
+    \State Evaluate the source term $S_{ij}$ using
+    Equation~\eqref{eq:apf_viscous_source}
+    \State $\mathbf{r}^{(j)}_i \gets F_{ij}+S_{ij}$
+\EndFor
+\State \Return $\mathbf{r}^{(j)}$
+\end{algorithmic}
+\end{algorithm}
+
+The returned vector contains residual values at physical
+streamwise indices; its ghost-cell entries remain zero.
+Accordingly, the right-hand side of the first factorized
+system is $\Delta t\,\mathbf{r}^{(j)}$.
+
+\subsubsection{Boundary Conditions in the Factorized Systems}
+
+The boundary conditions are imposed through the boundary rows
+of the factorized systems. In terms of temperature corrections,
+the four boundary conditions are
+
+\begin{align}
+\text{Inlet:}\qquad
+&\delta T_{0,j}+\delta T_{1,j}=0,
+\\
+\text{Outlet:}\qquad
+&\delta T_{n_x,j}-\delta T_{n_x+1,j}=0,
+\\
+\text{Bottom wall:}\qquad
+&\delta T_{i,0}+\delta T_{i,1}=0,
+\\
+\text{Top wall:}\qquad
+&\delta T_{i,n_y}+\delta T_{i,n_y+1}=0.
+\end{align}
+
+The inlet and outlet conditions are incorporated into the
+streamwise system, while the wall conditions are imposed in the
+wall-normal system. The corresponding matrix rows contain two
+nonzero coefficients: $(1,1)$ for prescribed-temperature
+boundaries and $(1,-1)$ for the outlet zero-gradient condition,
+with the latter ordered as in the matrix implementation.
+
+\subsubsection{Streamwise System}
+
+For each fixed wall-normal index $j$, the first APF stage
+requires the solution of
+Equation~\eqref{eq:apf_x_stage} along the streamwise direction.
+For a physical cell $(i,j)$, the resulting equation is
+\begin{equation}
+\boxed{
+a^x_{W,i}\,
+\delta\widetilde{T}_{i-1,j}
++
+a^x_P\,
+\delta\widetilde{T}_{ij}
++
+a^x_{E,i}\,
+\delta\widetilde{T}_{i+1,j}
+=
+\Delta t\,\mathcal{R}_{ij}^{n},
+}
+\label{eq:apf_x_tridiagonal}
+\end{equation}
+where the coefficients are
+\begin{align}
+a^x_{W,i}
+&=
+-\frac{\alpha_c u_{i-1,j}\Delta t}{2\Delta x}
+-\frac{\Delta t}{\mathrm{Pe}\,\Delta x^2},
+\label{eq:apf_x_west}
+\\[0.15cm]
+a^x_P
+&=
+1+\frac{2\Delta t}{\mathrm{Pe}\,\Delta x^2},
+\label{eq:apf_x_center}
+\\[0.15cm]
+a^x_{E,i}
+&=
+\frac{\alpha_c u_{i+1,j}\Delta t}{2\Delta x}
+-\frac{\Delta t}{\mathrm{Pe}\,\Delta x^2}.
+\label{eq:apf_x_east}
+\end{align}
+
+For each $j$, the unknown corrections are arranged in a
+vector containing the physical cells and the two streamwise
+ghost cells. The coefficient matrix is tridiagonal. The
+right-hand side contains the residual values at the physical
+cells, scaled by $\Delta t$, with zero entries at the ghost
+indices.
+
+The corresponding matrix is assembled by
+\texttt{build\_x\_matrix}, as summarized below.
+
+\begin{algorithm}[H]
+\caption{Construction of the Streamwise Coefficient Matrix}
+\label{alg:apf_build_x_matrix}
+\begin{algorithmic}[1]
+\Require Mesh dimensions $n_x,n_y$, wall-normal index $j$,
+time step $\Delta t$, Peclet number $\mathrm{Pe}$, velocity
+field $u$, domain length $L_x$, and convection coefficient
+$\alpha_c$
+\Ensure Streamwise matrix $\mathbf{A}_x^{(j)}$
+\State $\Delta x \gets L_x/n_x$
+\State Initialize $\mathbf{A}_x^{(j)}$ as a zero matrix of
+size $(n_x+2)\times(n_x+2)$
+\State Set the inlet row:
+$A^x_{0,0}\gets1$, $A^x_{0,1}\gets1$
+\State Set the outlet row:
+$A^x_{n_x+1,n_x}\gets1$,
+$A^x_{n_x+1,n_x+1}\gets-1$
+\For{$i=1,\ldots,n_x$}
+    \State $A^x_{i,i}
+    \gets 1+\dfrac{2\Delta t}{\mathrm{Pe}\,\Delta x^2}$
+    \State $A^x_{i,i+1}
+    \gets \dfrac{\alpha_c\Delta t\,u_{i+1,j}}{2\Delta x}
+    -\dfrac{\Delta t}{\mathrm{Pe}\,\Delta x^2}$
+    \State $A^x_{i,i-1}
+    \gets -\dfrac{\alpha_c\Delta t\,u_{i-1,j}}{2\Delta x}
+    -\dfrac{\Delta t}{\mathrm{Pe}\,\Delta x^2}$
+\EndFor
+\State \Return $\mathbf{A}_x^{(j)}$
+\end{algorithmic}
+\end{algorithm}
+
+For each physical wall-normal index, the resulting linear
+system is
+\begin{equation}
+\boxed{
+\mathbf{A}_x^{(j)}
+\delta\widetilde{\mathbf{T}}^{(j)}
+=
+\Delta t\,\mathbf{r}^{(j)}.
+}
+\label{eq:apf_x_matrix_system}
+\end{equation}
+It is solved using the Thomas algorithm, producing one row
+of the intermediate correction field.
+
+\subsubsection{Wall-Normal System}
+
+After the intermediate correction has been obtained, the
+second APF stage solves
+Equation~\eqref{eq:apf_y_stage} along the wall-normal
+direction. For a physical cell $(i,j)$, the corresponding
+equation is
+\begin{equation}
+\boxed{
+a^y_{S,j}\,\delta T_{i,j-1}
++
+a^y_P\,\delta T_{ij}
++
+a^y_{N,j}\,\delta T_{i,j+1}
+=
+\delta\widetilde{T}_{ij}.
+}
+\label{eq:apf_y_tridiagonal}
+\end{equation}
+The coefficients are
+\begin{align}
+a^y_{S,j}
+&=
+-\frac{\alpha_c v_{i,j-1}\Delta t}{2\Delta y}
+-\frac{\Delta t}{\mathrm{Pe}\,\Delta y^2},
+\label{eq:apf_y_south}
+\\[0.15cm]
+a^y_P
+&=
+1+\frac{2\Delta t}{\mathrm{Pe}\,\Delta y^2},
+\label{eq:apf_y_center}
+\\[0.15cm]
+a^y_{N,j}
+&=
+\frac{\alpha_c v_{i,j+1}\Delta t}{2\Delta y}
+-\frac{\Delta t}{\mathrm{Pe}\,\Delta y^2}.
+\label{eq:apf_y_north}
+\end{align}
+
+For each fixed streamwise index $i$, the unknown corrections
+are arranged in a vector containing the physical cells and
+the two wall-normal ghost cells. The right-hand side is
+obtained from the corresponding column of the intermediate
+correction field, with zero right-hand-side entries for the
+boundary-condition rows.
+
+The wall-normal coefficient matrix is assembled using
+\texttt{build\_y\_matrix}.
+
+\begin{algorithm}[H]
+\caption{Construction of the Wall-Normal Coefficient Matrix}
+\label{alg:apf_build_y_matrix}
+\begin{algorithmic}[1]
+\Require Mesh dimensions $n_x,n_y$, streamwise index $i$,
+time step $\Delta t$, Peclet number $\mathrm{Pe}$, velocity
+field $v$, domain length $L_y$, and convection coefficient
+$\alpha_c$
+\Ensure Wall-normal matrix $\mathbf{A}_y^{(i)}$
+\State $\Delta y \gets L_y/n_y$
+\State Initialize $\mathbf{A}_y^{(i)}$ as a zero matrix of
+size $(n_y+2)\times(n_y+2)$
+\State Set the bottom-wall row:
+$A^y_{0,0}\gets1$, $A^y_{0,1}\gets1$
+\State Set the top-wall row:
+$A^y_{n_y+1,n_y}\gets1$,
+$A^y_{n_y+1,n_y+1}\gets1$
+\For{$j=1,\ldots,n_y$}
+    \State $A^y_{j,j}
+    \gets 1+\dfrac{2\Delta t}{\mathrm{Pe}\,\Delta y^2}$
+    \State $A^y_{j,j+1}
+    \gets \dfrac{\alpha_c\Delta t\,v_{i,j+1}}{2\Delta y}
+    -\dfrac{\Delta t}{\mathrm{Pe}\,\Delta y^2}$
+    \State $A^y_{j,j-1}
+    \gets -\dfrac{\alpha_c\Delta t\,v_{i,j-1}}{2\Delta y}
+    -\dfrac{\Delta t}{\mathrm{Pe}\,\Delta y^2}$
+\EndFor
+\State \Return $\mathbf{A}_y^{(i)}$
+\end{algorithmic}
+\end{algorithm}
+
+For each physical streamwise index, the second stage is
+written in matrix form as
+\begin{equation}
+\boxed{
+\mathbf{A}_y^{(i)}
+\delta\mathbf{T}^{(i)}
+=
+\delta\widetilde{\mathbf{T}}^{(i)}.
+}
+\label{eq:apf_y_matrix_system}
+\end{equation}
+This system is also tridiagonal and is solved using the
+Thomas algorithm. Repeating the procedure over all physical
+streamwise indices yields the final temperature correction
+field.
+
+In the present problem, the prescribed velocity field has
+$v=0$. Consequently, the wall-normal convective terms in
+the residual and wall-normal matrix coefficients vanish,
+although the wall-normal diffusion terms remain.
+
+\subsubsection{APF Iteration and Steady-State Convergence}
+
+The complete APF procedure consists of repeatedly evaluating
+the spatial residual, solving the streamwise and wall-normal
+systems, updating the temperature field, and checking the
+steady-state convergence criterion.
+
+The RMS residual is defined over physical cells as
+\begin{equation}
+\boxed{
+R_{\mathrm{RMS}}
+=
+\sqrt{
+\frac{1}{n_xn_y}
+\sum_{i=1}^{n_x}
+\sum_{j=1}^{n_y}
+\left[\mathcal{R}_{ij}(T)\right]^2
+}.
+}
+\label{eq:apf_convergence_residual}
+\end{equation}
+It is evaluated using the same spatial residual as
+Equation~\eqref{eq:apf_current_residual}. The iteration is
+terminated when
+\begin{equation}
+\boxed{
+R_{\mathrm{RMS}}<10^{-12}.
+}
+\label{eq:apf_convergence_criterion}
+\end{equation}
+
+\begin{algorithm}[H]
+\caption{APF Pseudo-Time Marching to Steady State}
+\label{alg:apf_complete_solver}
+\begin{algorithmic}[1]
+\Require Initial temperature field $T^0$, velocity fields
+$u,v$, mesh dimensions $n_x,n_y$, time step $\Delta t$,
+parameters $\mathrm{Pe}$ and $\mathrm{Br}$, domain dimensions
+$L_x,L_y$, convection coefficient $\alpha_c$, tolerance
+$\varepsilon=10^{-12}$, maximum iterations $N_{\max}$,
+and snapshot interval $N_s$
+\Ensure Final temperature field $T$, iteration and residual
+histories, computation time, and temperature snapshots
+
+\State $T\gets T^0$
+\State Initialize iteration and residual histories as empty
+\State Store $T^0$ as the initial snapshot at iteration $0$
+\State Start the computation timer
+\State $\mathrm{converged}\gets\mathrm{false}$
+
+\For{$n=1,\ldots,N_{\max}$}
+    \State Apply the temperature boundary conditions
+    \State Initialize the intermediate correction field
+    $\delta\widetilde{T}$ and final correction field $\delta T$
+
+    \Statex
+    \State \textbf{First stage: streamwise solve}
+    \For{$j=1,\ldots,n_y$}
+        \State Construct $\mathbf{r}^{(j)}$ using
+        Algorithm~\ref{alg:apf_build_rhs}
+        \State Construct $\mathbf{A}_x^{(j)}$ using
+        Algorithm~\ref{alg:apf_build_x_matrix}
+        \State Set the boundary entries of
+        $\Delta t\,\mathbf{r}^{(j)}$ to zero
+        \State Solve
+        $\mathbf{A}_x^{(j)}
+        \delta\widetilde{\mathbf{T}}^{(j)}
+        =\Delta t\,\mathbf{r}^{(j)}$
+        using the Thomas algorithm, as given in
+        Equation~\eqref{eq:apf_x_matrix_system}
+        \State Store the solution in the corresponding row of
+        $\delta\widetilde{T}$
+    \EndFor
+
+    \Statex
+    \State \textbf{Second stage: wall-normal solve}
+    \For{$i=1,\ldots,n_x$}
+        \State Construct $\mathbf{A}_y^{(i)}$ using
+        Algorithm~\ref{alg:apf_build_y_matrix}
+        \State Extract the corresponding column of
+        $\delta\widetilde{T}$
+        \State Solve
+        $\mathbf{A}_y^{(i)}\delta\mathbf{T}^{(i)}
+        =\delta\widetilde{\mathbf{T}}^{(i)}$
+        using the Thomas algorithm, as given in
+        Equation~\eqref{eq:apf_y_matrix_system}
+        \State Store the solution in the corresponding column
+        of $\delta T$
+    \EndFor
+
+    \Statex
+    \State Update the temperature using
+    Equation~\eqref{eq:apf_temperature_update}
+    \State Apply the temperature boundary conditions
+    \State Evaluate $R_{\mathrm{RMS}}$ using
+    Equation~\eqref{eq:apf_convergence_residual}
+    \State Append $n$ to the iteration history
+    \State Append $R_{\mathrm{RMS}}$ to the residual history
+
+    \If{$n\bmod N_s=0$}
+        \State Store the current temperature field as a snapshot
+        \State Record snapshot iteration $n$
+    \EndIf
+
+    \If{$R_{\mathrm{RMS}}\leq\varepsilon$}
+        \State $\mathrm{converged}\gets\mathrm{true}$
+        \State \textbf{break}
+    \EndIf
+\EndFor
+
+\State Stop the timer and calculate computation time
+
+\If{the final iteration is not already stored as a snapshot}
+    \State Store the final temperature field and iteration
+\EndIf
+
+\If{not converged}
+    \State Issue a warning that the tolerance was not reached
+    within $N_{\max}$ iterations
+\EndIf
+
+\State \Return $T$, iteration history, residual history,
+computation time, temperature snapshots, and snapshot iterations
+\end{algorithmic}
+\end{algorithm}
+
+The APF method therefore advances the temperature field through
+two sets of tridiagonal solves at each pseudo-time iteration.
+The RMS residual measures convergence toward a solution of the
+discrete steady energy equation. A small residual indicates
+that the discrete equation is nearly satisfied, but does not
+by itself establish spatial accuracy or grid independence.

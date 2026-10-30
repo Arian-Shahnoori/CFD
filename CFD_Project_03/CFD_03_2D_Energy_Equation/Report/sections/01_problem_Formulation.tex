@@ -1,0 +1,88 @@
+\section{Problem Description}
+\label{sec:problem_description}
+
+\subsection{Physical Domain and Flow Conditions}
+
+The objective of this project is to obtain a numerical solution
+to the two-dimensional energy equation for laminar, incompressible
+flow through a rectangular channel. The computational domain has
+a length of $L_x=5$ and a height of $L_y=1$. A uniform,
+cell-centered grid is used to discretize the domain.
+
+The flow is assumed to be fully developed, with a prescribed
+velocity profile in the streamwise direction and no velocity
+component in the transverse direction. The dimensionless velocity
+field is defined as
+\begin{equation}
+u(y)=6\overline{u}\,y(1-y),
+\qquad
+v(y)=0,
+\label{eq:velocity_profile}
+\end{equation}
+where $\overline{u}$ is the mean streamwise velocity. For
+$\overline{u}=3$, the velocity profile becomes
+\begin{equation}
+\boxed{
+u(y)=18y(1-y),
+\qquad v(y)=0.
+}
+\label{eq:velocity_profile_expanded}
+\end{equation}
+
+The nominal flow parameters are
+\begin{equation}
+\mathrm{Re}=25,
+\qquad
+\mathrm{Pr}=0.7,
+\qquad
+\mathrm{Ec}=0.1,
+\label{eq:nominal_parameters}
+\end{equation}
+where $\mathrm{Re}$, $\mathrm{Pr}$, and $\mathrm{Ec}$ denote
+the Reynolds, Prandtl, and Eckert numbers, respectively.
+
+\subsection{Boundary and Initial Conditions}
+
+The temperature field is subject to prescribed thermal
+conditions at the channel boundaries. The lower and upper
+walls are maintained at constant dimensionless temperatures
+of zero and one, respectively:
+\begin{align}
+T(x,0,t)&=0,
+\label{eq:bottom_wall_condition}
+\\
+T(x,1,t)&=1.
+\label{eq:top_wall_condition}
+\end{align}
+
+At the inlet, the temperature is prescribed using the
+linear profile
+\begin{equation}
+T(0,y,t)=T_{\mathrm{in}}(y)=y.
+\label{eq:inlet_temperature_condition}
+\end{equation}
+
+At the outlet, a zero streamwise temperature gradient is
+applied:
+\begin{equation}
+\left.\frac{\partial T}{\partial x}\right|_{x=L_x}=0.
+\label{eq:outlet_temperature_condition}
+\end{equation}
+This condition represents zero conductive heat flux in the
+streamwise direction at the outlet.
+
+The initial temperature distribution throughout the domain
+is specified as
+\begin{equation}
+\boxed{
+T(x,y,0)=y.
+}
+\label{eq:initial_temperature}
+\end{equation}
+
+Thus, the initial temperature profile matches the prescribed
+inlet profile and varies linearly between the lower and upper
+wall temperatures. Starting from this initial condition, the
+temperature field evolves under the combined effects of
+advection, thermal diffusion, and viscous dissipation until
+a steady-state solution is obtained.

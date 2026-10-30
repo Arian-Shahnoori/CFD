@@ -1,0 +1,136 @@
+\section{Numerical Accuracy Assessment}
+\label{sec:numerical_accuracy}
+
+Numerical accuracy must be assessed independently of convergence
+to a steady state. A small residual indicates that the discretized
+governing equation is satisfied closely, but it does not necessarily
+imply that the numerical solution accurately represents the physical
+problem.
+
+The spatial accuracy of the numerical solution can be assessed
+by comparing it with an exact solution, when one is available.
+Otherwise, the observed order of convergence can be estimated by
+comparing numerical solutions obtained on successively refined grids.
+
+\subsection{Accuracy Assessment Using an Exact Solution}
+
+When an exact solution is available, the numerical error is
+calculated by comparing the numerical and exact solutions.
+For a numerical scheme with spatial order $p$, the error in the
+asymptotic range can be expressed as
+\begin{equation}
+E(h)\approx C h^p,
+\label{eq:error_order_exact}
+\end{equation}
+where $h$ is a characteristic grid spacing and $C$ is a
+grid-independent constant.
+
+For two grids with spacings $h_1$ and $h_2$, the ratio of
+their errors is
+\begin{equation}
+\frac{E_1}{E_2}
+\approx
+\left(\frac{h_1}{h_2}\right)^p.
+\label{eq:error_ratio_exact}
+\end{equation}
+
+When the grid spacing is halved, $h_2=h_1/2$, the observed
+spatial order can be estimated as
+\begin{equation}
+\boxed{
+p\approx
+\frac{\ln(E_1/E_2)}{\ln 2}.
+}
+\label{eq:order_exact}
+\end{equation}
+
+The error can be quantified using the root-mean-square (RMS)
+norm of the difference between the numerical and exact
+temperature fields:
+\begin{equation}
+E=
+\sqrt{
+\frac{1}{N_{\mathrm{CV}}}
+\sum_{i=1}^{n_x}
+\sum_{j=1}^{n_y}
+\left[
+T_{ij}-T_{\mathrm{exact}}(x_i,y_j)
+\right]^2
+},
+\label{eq:exact_rms_error}
+\end{equation}
+where $N_{\mathrm{CV}}=n_xn_y$ is the total number of
+control volumes, and $(x_i,y_j)$ denotes the center of
+each control volume.
+
+\subsection{Grid Convergence Without an Exact Solution}
+
+For the present problem, an exact solution for the complete
+temperature field subject to the prescribed inlet condition
+is not available. Therefore, the numerical error cannot be
+calculated directly using Equation~\eqref{eq:exact_rms_error}.
+Instead, the observed spatial order of convergence is estimated
+by comparing solutions obtained on three successively refined
+grids.
+
+Assuming that the numerical solutions approach the same limiting
+solution as the grid is refined, the solution on a grid with
+characteristic spacing $h$ can be expressed as
+\begin{equation}
+T_h=T_{\mathrm{exact}}+C h^p,
+\label{eq:grid_solution_error}
+\end{equation}
+where $T_{\mathrm{exact}}$ represents the limiting solution,
+$C$ is the leading error coefficient, and $p$ is the observed
+spatial order of convergence.
+
+Let $T_{M_1}$, $T_{M_2}$, and $T_{M_3}$ denote the numerical
+solutions on three grids whose characteristic spacings satisfy
+\begin{equation}
+h_2=\frac{h_1}{2},
+\qquad
+h_3=\frac{h_2}{2}.
+\label{eq:grid_refinement_ratio}
+\end{equation}
+
+The differences between successive solutions are defined as
+\begin{equation}
+D_{12}=\left\|T_{M_1}-T_{M_2}\right\|_2,
+\qquad
+D_{23}=\left\|T_{M_2}-T_{M_3}\right\|_2,
+\label{eq:grid_difference_norms}
+\end{equation}
+where $\|\cdot\|_2$ denotes the discrete RMS norm. Since the
+solutions are defined on different cell-centered grids, their
+temperature fields must first be interpolated onto common
+physical locations before the differences are calculated.
+
+Assuming that the solutions are in the asymptotic convergence
+range, the differences between successive grids satisfy
+\begin{equation}
+\frac{D_{23}}{D_{12}}\approx\frac{1}{2^p}.
+\label{eq:grid_convergence_ratio}
+\end{equation}
+
+Taking logarithms gives the observed spatial order:
+\begin{equation}
+\boxed{
+p_{\mathrm{obs}}
+=
+\frac{\ln(D_{12}/D_{23})}{\ln 2}.
+}
+\label{eq:observed_spatial_order}
+\end{equation}
+
+This approach estimates the spatial convergence order without
+requiring an exact solution. Its reliability depends on the
+solutions exhibiting consistent convergence and the leading
+spatial discretization error dominating other numerical errors.
+Therefore, all grids must be sufficiently converged to steady
+state so that the remaining pseudo-time convergence error does
+not significantly affect the differences between solutions.
+
+Finally, the observed order of convergence does not by itself
+establish the absolute accuracy of the finest-grid solution.
+It indicates how rapidly the numerical solution approaches
+its limiting value as the grid is refined.

@@ -1,0 +1,332 @@
+\section{Temporal Accuracy and Stability Analysis}
+\label{sec:stability_analysis}
+
+\subsection{Semi-Discrete System and Eigenvalue Analysis}
+
+After spatial discretization and implementation of the boundary
+conditions, the energy equation can be expressed as a system of
+ordinary differential equations:
+\begin{equation}
+\boxed{
+\frac{d\mathbf{T}}{dt}
+=
+\mathbf{A}\mathbf{T}+\mathbf{b},
+}
+\label{eq:stability_semidiscrete}
+\end{equation}
+where $\mathbf{T}$ is the vector of physical-cell temperatures,
+$\mathbf{A}$ is the assembled spatial-operator matrix, and
+$\mathbf{b}$ contains the temperature-independent contributions
+from prescribed boundary values and viscous dissipation.
+
+The matrix $\mathbf{A}$ depends on the spatial discretization,
+grid resolution, prescribed velocity field, Peclet number,
+convection coefficient, and implementation of the boundary
+conditions. Since the computational domain has non-periodic
+boundary conditions and a streamwise velocity that varies
+across the channel, the eigenvalues cannot generally be
+obtained using the Fourier-mode formula for a periodic,
+constant-coefficient stencil.
+
+Instead, the spatial matrix must first be assembled using
+the actual discretized equations and boundary conditions.
+Its eigenvalues are then calculated numerically from
+\begin{equation}
+\boxed{
+\mathbf{A}\mathbf{q}_k
+=
+\lambda_k\mathbf{q}_k,
+\qquad k=1,\ldots,N,
+}
+\label{eq:spatial_eigenvalue_problem}
+\end{equation}
+where $\lambda_k$ and $\mathbf{q}_k$ are the eigenvalues
+and corresponding eigenvectors, and $N=n_xn_y$ is the
+number of physical-cell temperature unknowns.
+
+The eigenvalues characterize the modal behaviour of the
+linear spatial operator and provide the basis for examining
+the stability of the time-integration methods. Since the
+source vector $\mathbf{b}$ is independent of temperature,
+it does not directly enter the amplification factors
+derived below.
+
+\subsection{Amplification Factors and Temporal Accuracy}
+
+Consider the scalar linear equation
+\begin{equation}
+\frac{dw}{dt}=\lambda w,
+\label{eq:stability_test_equation}
+\end{equation}
+where $\lambda$ represents an eigenvalue of the spatial
+operator. Define the dimensionless parameter
+\begin{equation}
+z=\lambda\Delta t,
+\label{eq:stability_parameter}
+\end{equation}
+where $\Delta t$ is the time step.
+
+The exact solution advances according to
+\begin{equation}
+w^{n+1}=e^z w^n.
+\label{eq:exact_amplification}
+\end{equation}
+A numerical time-integration method produces an update of
+the form
+\begin{equation}
+w^{n+1}=G(z)w^n,
+\label{eq:numerical_amplification}
+\end{equation}
+where $G(z)$ is the amplification factor of the method.
+
+Comparing the amplification factor with the Taylor expansion
+of the exact solution,
+\begin{equation}
+e^z
+=
+1+z+\frac{z^2}{2!}
++\frac{z^3}{3!}
++\frac{z^4}{4!}+\cdots,
+\label{eq:exact_taylor_expansion}
+\end{equation}
+provides a way to determine the temporal order of accuracy.
+A method is of order $p$ when its amplification factor
+matches the expansion of $e^z$ through the term $z^p$,
+with the first unmatched term having order $z^{p+1}$.
+
+\subsubsection{Implicit Euler}
+
+The implicit Euler method evaluates the spatial operator
+at the next time level:
+\begin{equation}
+\frac{w^{n+1}-w^n}{\Delta t}
+=
+\lambda w^{n+1}.
+\end{equation}
+Rearranging gives
+\begin{equation}
+w^{n+1}
+=
+\frac{1}{1-\lambda\Delta t}w^n.
+\end{equation}
+Therefore, its amplification factor is
+\begin{equation}
+\boxed{
+G_{\mathrm{IE}}(z)=\frac{1}{1-z}.
+}
+\label{eq:implicit_euler_amplification}
+\end{equation}
+
+Expanding this expression as a power series gives
+\begin{equation}
+G_{\mathrm{IE}}(z)
+=
+1+z+z^2+z^3+\cdots.
+\end{equation}
+Comparison with Equation~\eqref{eq:exact_taylor_expansion}
+shows agreement only through the linear term. Implicit
+Euler is therefore first-order accurate in time, with a
+global temporal error of order $\mathcal{O}(\Delta t)$
+for sufficiently smooth solutions.
+
+The absolute-stability condition is
+\begin{equation}
+\left|
+\frac{1}{1-\lambda\Delta t}
+\right|
+\leq 1.
+\label{eq:implicit_euler_stability}
+\end{equation}
+If $\operatorname{Re}(\lambda)\leq 0$, then
+\begin{equation}
+\begin{aligned}
+|1-\lambda\Delta t|^2
+&=
+1-2\Delta t\,\operatorname{Re}(\lambda)
++\Delta t^2|\lambda|^2
+\\
+&\geq 1.
+\end{aligned}
+\end{equation}
+Consequently, implicit Euler satisfies the absolute-stability
+condition for every positive time step when the eigenvalues
+of the spatial operator lie in the non-positive real
+half-plane. This property is known as $A$-stability.
+
+However, $A$-stability does not guarantee that an arbitrarily
+large time step will produce an accurate transient solution
+or efficiently converge to a steady state. The spectrum of
+the actual spatial matrix and the practical convergence
+behaviour must still be considered.
+
+\subsubsection{Second-Order Runge--Kutta Method}
+
+The explicit midpoint method advances the solution through
+an intermediate state:
+\begin{align}
+w^{(1)}
+&=
+w^n+\frac{\Delta t}{2}\lambda w^n,
+\\
+w^{n+1}
+&=
+w^n+\Delta t\,\lambda w^{(1)}.
+\end{align}
+Substituting the intermediate value into the final update
+gives
+\begin{equation}
+w^{n+1}
+=
+\left(
+1+\lambda\Delta t
++\frac{(\lambda\Delta t)^2}{2}
+\right)w^n.
+\end{equation}
+The amplification factor is therefore
+\begin{equation}
+\boxed{
+G_{\mathrm{RK2}}(z)
+=
+1+z+\frac{z^2}{2}.
+}
+\label{eq:rk2_amplification}
+\end{equation}
+
+This polynomial matches the Taylor expansion of the exact
+amplification factor through the quadratic term. The
+explicit midpoint method is consequently second-order
+accurate in time, with global temporal error
+$\mathcal{O}(\Delta t^2)$ for sufficiently smooth solutions.
+
+Its absolute-stability condition is
+\begin{equation}
+\boxed{
+\left|
+1+\lambda_k\Delta t
++\frac{(\lambda_k\Delta t)^2}{2}
+\right|
+\leq 1
+\qquad \text{for every } k.
+}
+\label{eq:rk2_stability}
+\end{equation}
+
+Since this condition is not satisfied for arbitrary complex
+values of $\lambda_k\Delta t$, the explicit midpoint method
+is conditionally stable. The allowable time step depends on
+the eigenvalues of the assembled spatial matrix, which in
+turn depend on the grid, velocity field, Peclet number,
+and convection coefficient.
+
+\subsubsection{Fourth-Order Runge--Kutta Method}
+
+The classical fourth-order Runge--Kutta method evaluates
+the right-hand side at four stages:
+\begin{align}
+k_1&=\lambda w^n,
+\\
+k_2&=\lambda\left(w^n+\frac{\Delta t}{2}k_1\right),
+\\
+k_3&=\lambda\left(w^n+\frac{\Delta t}{2}k_2\right),
+\\
+k_4&=\lambda\left(w^n+\Delta t\,k_3\right).
+\end{align}
+The solution is updated according to
+\begin{equation}
+w^{n+1}
+=
+w^n+\frac{\Delta t}{6}
+\left(k_1+2k_2+2k_3+k_4\right).
+\end{equation}
+Substitution of the four stages yields the amplification
+factor
+\begin{equation}
+\boxed{
+G_{\mathrm{RK4}}(z)
+=
+1+z+\frac{z^2}{2}
++\frac{z^3}{6}
++\frac{z^4}{24}.
+}
+\label{eq:rk4_amplification}
+\end{equation}
+
+This polynomial matches the Taylor expansion of the exact
+amplification factor through the fourth-order term.
+The classical Runge--Kutta method is therefore fourth-order
+accurate in time, with global temporal error
+$\mathcal{O}(\Delta t^4)$ for sufficiently smooth solutions.
+
+Its absolute-stability condition is
+\begin{equation}
+\boxed{
+\left|
+1+\lambda_k\Delta t
++\frac{(\lambda_k\Delta t)^2}{2}
++\frac{(\lambda_k\Delta t)^3}{6}
++\frac{(\lambda_k\Delta t)^4}{24}
+\right|
+\leq 1
+\qquad \text{for every } k.
+}
+\label{eq:rk4_stability}
+\end{equation}
+
+Like RK2, classical RK4 is conditionally stable. Its
+stability region differs from that of RK2, so its allowable
+time step must be assessed using its own amplification
+factor rather than inferred from the RK2 stability limit.
+
+\subsection{Numerical Assessment of Stability}
+
+Once the spatial matrix has been assembled, the eigenvalues
+can be used to assess the modal stability of the explicit
+Runge--Kutta methods. For a candidate time step, define
+\begin{equation}
+G_{\max}(\Delta t)
+=
+\max_{k=1,\ldots,N}
+\left|G(\lambda_k\Delta t)\right|.
+\label{eq:maximum_amplification}
+\end{equation}
+The candidate time step satisfies the modal
+absolute-stability criterion if
+\begin{equation}
+\boxed{
+G_{\max}(\Delta t)\leq 1.
+}
+\label{eq:maximum_amplification_condition}
+\end{equation}
+
+The maximum stable time step can be estimated by evaluating
+this condition over candidate time steps and refining the
+search near the stability boundary. This calculation is
+performed separately for RK2 and RK4 because their
+amplification factors differ.
+
+The direct sparse solver uses implicit Euler time integration.
+Its time integrator is $A$-stable when the spectrum of the
+assembled spatial operator lies in the non-positive real
+half-plane. The direct linear-system solution itself does not
+introduce a separate explicit time-step stability restriction.
+Nevertheless, because the solver is used for pseudo-time
+marching toward steady state, its practical behaviour depends
+on the selected time step, the properties of the discrete
+operator, and the numerical conditioning of the linear system.
+These factors are assessed through numerical convergence tests.
+
+The approximate factorization method requires a separate
+assessment. Although it is derived from the implicit Euler
+equation, replacing the combined spatial operator with a
+product of directional operators changes the numerical
+update. Its stability therefore cannot be inferred solely
+from the amplification factor of fully implicit Euler.
+In this project, the behaviour of the approximate
+factorization method is evaluated numerically by testing
+candidate time steps and monitoring the resulting residuals
+and convergence behaviour.
+
+The stability analysis therefore provides a
+theoretical basis for choosing time steps, while numerical
+tests and convergence histories are used to verify the
+behaviour of the implemented solvers.

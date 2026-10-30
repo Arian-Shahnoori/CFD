@@ -1,0 +1,559 @@
+\section{Governing Equation and Spatial Discretization}
+\label{sec:governing_equation}
+
+\subsection{Dimensionless Energy Equation}
+
+The objective of this project is to develop a numerical solution
+for the two-dimensional energy equation of an incompressible flow.
+The equation describes the evolution of temperature under the
+combined effects of advection, diffusion, and viscous dissipation.
+Its dimensionless form is given by
+\begin{equation}
+\begin{aligned}
+\frac{\partial T}{\partial t}
++\frac{\partial (uT)}{\partial x}
++\frac{\partial (vT)}{\partial y}
+={}&
+\frac{1}{\mathrm{Re}\,\mathrm{Pr}}\nabla^2 T
+\\
+&+
+\frac{\mathrm{Ec}}{\mathrm{Re}}
+\left[
+2\left(\frac{\partial u}{\partial x}\right)^2
++2\left(\frac{\partial v}{\partial y}\right)^2
++\left(
+\frac{\partial u}{\partial y}
++\frac{\partial v}{\partial x}
+\right)^2
+\right],
+\end{aligned}
+\label{eq:energy}
+\end{equation}
+where $T$ is the dimensionless temperature, $u$ and $v$ are the
+velocity components in the $x$- and $y$-directions, respectively.
+The dimensionless parameters $\mathrm{Re}$, $\mathrm{Pr}$, and
+$\mathrm{Ec}$ denote the Reynolds, Prandtl, and Eckert numbers.
+
+The left-hand side of Equation~\eqref{eq:energy} contains the
+temporal and advective contributions. The first term on the
+right-hand side represents thermal diffusion, while the second
+term accounts for viscous dissipation, which represents the
+conversion of mechanical energy into thermal energy due to
+velocity gradients. This contribution is treated as a source
+term, denoted by $S$.
+
+\subsection{Finite-Volume Formulation}
+
+The governing equation is discretized using the finite-volume
+method (FVM). The computational domain is divided into
+rectangular control volumes, with the solution variables stored
+at their centers. Integrating Equation~\eqref{eq:energy} over
+a control volume and applying the divergence theorem to the
+advective and diffusive terms converts the corresponding volume
+integrals into surface integrals over the control-volume faces.
+
+For a two-dimensional rectangular control volume, the surface
+integrals are evaluated as contributions from the east, west,
+north, and south faces. The resulting semi-discrete equation is
+\begin{equation}
+\begin{aligned}
+\frac{d\overline{T}_{ij}}{dt}
+={}&
+-\frac{F^a_e-F^a_w}{\Delta x}
+-\frac{F^a_n-F^a_s}{\Delta y}
+\\
+&+
+\frac{1}{\mathrm{Re}\,\mathrm{Pr}}
+\left[
+\frac{F^d_e-F^d_w}{\Delta x}
++
+\frac{F^d_n-F^d_s}{\Delta y}
+\right]
++\overline{S}_{ij},
+\end{aligned}
+\label{eq:fv_semidiscrete}
+\end{equation}
+where $\overline{T}_{ij}$ and $\overline{S}_{ij}$ are the
+control-volume averages of temperature and the source term.
+The quantities $F^a$ and $F^d$ denote the normal advective
+flux and the normal temperature gradient, respectively.
+The subscripts $e$, $w$, $n$, and $s$ represent the east,
+west, north, and south faces. The control-volume dimensions
+are $\Delta x$ and $\Delta y$.
+
+The surface integrals are approximated using values at the
+face centers. Since the numerical solution is stored at
+cell centers, the face values are reconstructed from the
+available cell-centered quantities. Second-order central
+approximations are employed for the spatial discretization.
+
+\subsection{Spatial Discretization of the Advective Terms}
+
+The energy equation contains both advective and diffusive
+terms, whose different physical characteristics must be
+considered when selecting the spatial discretization scheme.
+Diffusion spreads information in all directions and is
+therefore discretized using a second-order central scheme.
+Although central differencing can also be used for advection,
+it may produce nonphysical oscillations or instability in
+convection-dominated regions, particularly when the cell
+Péclet number is large. In such regions, an upwind scheme
+is generally more appropriate because it respects the direction
+of information transport.
+
+In the present work, second-order central differencing is used
+for the advective terms. This choice is appropriate provided
+that diffusion is sufficiently strong relative to convection.
+
+The advective terms are written in conservative form as
+spatial derivatives of the products $uT$ and $vT$. In the
+present discretization, each product is treated as a single
+quantity. For a generic cell-centered variable $\phi$, the
+first-order spatial derivatives are approximated using
+second-order central differences:
+\begin{align}
+\left.\frac{\partial \phi}{\partial x}\right|_{ij}
+&\approx
+\frac{\phi_{i+1,j}-\phi_{i-1,j}}{2\Delta x},
+\label{eq:first_derivative_x}
+\\
+\left.\frac{\partial \phi}{\partial y}\right|_{ij}
+&\approx
+\frac{\phi_{i,j+1}-\phi_{i,j-1}}{2\Delta y}.
+\label{eq:first_derivative_y}
+\end{align}
+
+Applying these expressions directly to the products $uT$
+and $vT$ gives
+\begin{equation}
+\left.\frac{\partial (uT)}{\partial x}\right|_{ij}
+\approx
+\frac{
+u_{i+1,j}T_{i+1,j}
+-u_{i-1,j}T_{i-1,j}
+}{2\Delta x},
+\label{eq:advection_x}
+\end{equation}
+and
+\begin{equation}
+\left.\frac{\partial (vT)}{\partial y}\right|_{ij}
+\approx
+\frac{
+v_{i,j+1}T_{i,j+1}
+-v_{i,j-1}T_{i,j-1}
+}{2\Delta y}.
+\label{eq:advection_y}
+\end{equation}
+
+For completeness, the cell-centered temperature can also be
+interpolated to the control-volume faces using second-order
+central interpolation:
+\begin{align}
+T_{i+\frac{1}{2},j}
+&\approx \frac{T_{i,j}+T_{i+1,j}}{2},
+&
+T_{i-\frac{1}{2},j}
+&\approx \frac{T_{i-1,j}+T_{i,j}}{2},
+\label{eq:temperature_interpolation_x}
+\\
+T_{i,j+\frac{1}{2}}
+&\approx \frac{T_{i,j}+T_{i,j+1}}{2},
+&
+T_{i,j-\frac{1}{2}}
+&\approx \frac{T_{i,j-1}+T_{i,j}}{2}.
+\label{eq:temperature_interpolation_y}
+\end{align}
+The same central interpolation can be applied to other
+cell-centered variables when face values are required.
+However, Equations~\eqref{eq:advection_x} and
+\eqref{eq:advection_y} define the specific advective
+discretization adopted here: central differences are applied
+directly to the products $uT$ and $vT$.
+
+\subsection{Spatial Discretization of the Diffusive Term}
+
+The diffusive contribution is discretized using second-order
+central differences. The first derivatives of temperature are
+approximated as
+\begin{align}
+\left.\frac{\partial T}{\partial x}\right|_{ij}
+&\approx
+\frac{T_{i+1,j}-T_{i-1,j}}{2\Delta x},
+\\
+\left.\frac{\partial T}{\partial y}\right|_{ij}
+&\approx
+\frac{T_{i,j+1}-T_{i,j-1}}{2\Delta y}.
+\end{align}
+
+The second derivatives are approximated by
+\begin{align}
+\left.\frac{\partial^2 T}{\partial x^2}\right|_{ij}
+&\approx
+\frac{T_{i+1,j}-2T_{i,j}+T_{i-1,j}}{\Delta x^2},
+\label{eq:second_derivative_x}
+\\
+\left.\frac{\partial^2 T}{\partial y^2}\right|_{ij}
+&\approx
+\frac{T_{i,j+1}-2T_{i,j}+T_{i,j-1}}{\Delta y^2}.
+\label{eq:second_derivative_y}
+\end{align}
+
+Consequently, the Laplacian of temperature is discretized as
+\begin{equation}
+\begin{aligned}
+\nabla^2 T\big|_{ij}
+\approx{}&
+\frac{T_{i+1,j}-2T_{i,j}+T_{i-1,j}}{\Delta x^2}
+\\
+&+
+\frac{T_{i,j+1}-2T_{i,j}+T_{i,j-1}}{\Delta y^2}.
+\end{aligned}
+\label{eq:discrete_laplacian}
+\end{equation}
+
+\subsection{Spatial Discretization of the Viscous-Dissipation Source}
+
+The viscous-dissipation source term is evaluated using
+velocity gradients at the cell centers. The derivatives are
+approximated using second-order central differences:
+\begin{align}
+\left.\frac{\partial u}{\partial x}\right|_{ij}
+&\approx
+\frac{u_{i+1,j}-u_{i-1,j}}{2\Delta x},
+\\
+\left.\frac{\partial v}{\partial y}\right|_{ij}
+&\approx
+\frac{v_{i,j+1}-v_{i,j-1}}{2\Delta y},
+\\
+\left.\frac{\partial u}{\partial y}\right|_{ij}
+&\approx
+\frac{u_{i,j+1}-u_{i,j-1}}{2\Delta y},
+\\
+\left.\frac{\partial v}{\partial x}\right|_{ij}
+&\approx
+\frac{v_{i+1,j}-v_{i-1,j}}{2\Delta x}.
+\end{align}
+
+Substituting these expressions into the source-term equation
+gives
+\begin{equation}
+\begin{aligned}
+S_{ij}
+=
+\frac{\mathrm{Ec}}{\mathrm{Re}}
+\Bigg[
+&2\left(
+\frac{u_{i+1,j}-u_{i-1,j}}{2\Delta x}
+\right)^2
+\\
+&+2\left(
+\frac{v_{i,j+1}-v_{i,j-1}}{2\Delta y}
+\right)^2
+\\
+&+\left(
+\frac{u_{i,j+1}-u_{i,j-1}}{2\Delta y}
++
+\frac{v_{i+1,j}-v_{i-1,j}}{2\Delta x}
+\right)^2
+\Bigg].
+\end{aligned}
+\label{eq:discrete_viscous_source}
+\end{equation}
+
+\subsection{Complete Spatially Discretized Equation}
+
+Combining the central-difference approximations for the
+advective and diffusive terms with the discretized
+viscous-dissipation source gives the complete
+spatially discretized energy equation:
+\begin{equation}
+\boxed{
+\begin{aligned}
+\frac{d\overline{T}_{ij}}{dt}
+={}&
+-\frac{1}{2\Delta x}
+\left(
+u_{i+1,j}T_{i+1,j}
+-u_{i-1,j}T_{i-1,j}
+\right)
+\\[0.15cm]
+&+
+\frac{1}{\mathrm{Re}\,\mathrm{Pr}}
+\frac{
+T_{i+1,j}-2T_{i,j}+T_{i-1,j}
+}{\Delta x^2}
+\\[0.15cm]
+&-
+\frac{1}{2\Delta y}
+\left(
+v_{i,j+1}T_{i,j+1}
+-v_{i,j-1}T_{i,j-1}
+\right)
+\\[0.15cm]
+&+
+\frac{1}{\mathrm{Re}\,\mathrm{Pr}}
+\frac{
+T_{i,j+1}-2T_{i,j}+T_{i,j-1}
+}{\Delta y^2}
++S_{ij}
+\\[0.15cm]
+={}& FI_{ij}+S_{ij}
+=RHS_{ij}.
+\end{aligned}
+}
+\label{eq:complete_spatial_discretization}
+\end{equation}
+
+Here, $S_{ij}$ denotes the discretized viscous-dissipation
+source term. Equation~\eqref{eq:complete_spatial_discretization}
+is the spatially discretized, semi-discrete energy equation.
+All spatial derivatives have been replaced by algebraic
+expressions, whereas the temporal derivative remains
+continuous. The resulting system of ordinary differential
+equations can then be advanced in time using an appropriate
+time-integration method. The temporal discretization and
+the numerical solution methods used in this project are
+discussed in the next section.
+
+For the parameter study, the spatially discretized energy
+equation is reformulated in terms of the Peclet number $Pe$,
+the Brinkman number $Br$, and the convection coefficient
+$c$. Using the definitions
+\[
+Pe=\mathrm{Re}\,\mathrm{Pr},
+\qquad
+Br=Ec\,\mathrm{Pr},
+\]
+the coefficient of the viscous-dissipation term becomes
+\[
+\frac{Ec}{\mathrm{Re}}=\frac{Br}{Pe}.
+\]
+The parameterized equation therefore takes the form:
+\begin{equation}
+\boxed{
+\begin{aligned}
+\frac{d\overline{T}_{ij}}{dt}
+={}&
+-\frac{c}{2\Delta x}
+\left(
+u_{i+1,j}T_{i+1,j}
+-u_{i-1,j}T_{i-1,j}
+\right)
+\\[0.15cm]
+&-\frac{c}{2\Delta y}
+\left(
+v_{i,j+1}T_{i,j+1}
+-v_{i,j-1}T_{i,j-1}
+\right)
+\\[0.15cm]
+&+\frac{1}{Pe}
+\left[
+\frac{T_{i+1,j}-2T_{i,j}+T_{i-1,j}}{\Delta x^2}
+\right.
+\\
+&\qquad\left.
++\frac{T_{i,j+1}-2T_{i,j}+T_{i,j-1}}{\Delta y^2}
+\right]
++\frac{Br}{Pe}\,\Phi_{ij}
+\\[0.15cm]
+={}&FI_{ij}(Pe,c)
++\frac{Br}{Pe}\,\Phi_{ij}
+=RHS_{ij},
+\end{aligned}
+}
+\label{eq:parameterized_energy}
+\end{equation}
+where $\Phi_{ij}$ denotes the discretized
+viscous-dissipation function without its multiplicative
+coefficient. The operator $FI_{ij}(Pe,c)$ contains the
+advective and diffusive contributions. This formulation
+provides the basis for the parameter study, in which the
+effects of convection, thermal diffusion, and viscous
+dissipation are examined through controlled variations of
+$c$, $Pe$, and $Br$.
+
+\subsection{Implementation of Boundary Conditions Using Ghost Cells}
+\label{subsec:ghost_cell_boundary_conditions}
+
+The spatial discretization requires temperature values at neighboring
+cells, including near the boundaries of the computational domain.
+However, the physical domain does not contain cells outside its
+boundaries. To apply the same discrete spatial operators to boundary
+cells, an additional layer of fictitious cells, known as
+\textit{ghost cells}, is introduced around the physical domain.
+
+The temperature values in ghost cells are not independent unknowns.
+Instead, they are calculated from the prescribed boundary conditions
+and the temperature values in adjacent physical cells. This approach
+allows the discretized equations to retain a consistent stencil near
+the boundaries.
+
+In the following expressions, the physical cells are indexed by
+$i=1,\ldots,n_x$ and $j=1,\ldots,n_y$. The inlet, bottom-wall,
+top-wall, and outlet ghost cells are located at
+$i=0$, $j=0$, $j=n_y+1$, and $i=n_x+1$, respectively.
+
+\subsubsection{Dirichlet Boundary Conditions}
+
+For a prescribed temperature at a boundary face, the ghost-cell
+temperature is determined by assuming that the boundary-face
+temperature is the average of the adjacent physical-cell and
+ghost-cell temperatures. At the inlet, this relation is
+\begin{equation}
+T_{\mathrm{in},j}
+=
+\frac{T_{0,j}+T_{1,j}}{2},
+\end{equation}
+which gives
+\begin{equation}
+\boxed{
+T_{0,j}=2T_{\mathrm{in},j}-T_{1,j}.
+}
+\label{eq:ghost_inlet}
+\end{equation}
+
+Similarly, the bottom and top walls have prescribed temperatures
+$T_{\mathrm{bottom}}$ and $T_{\mathrm{top}}$. The corresponding
+ghost-cell relations are
+\begin{equation}
+\boxed{
+T_{i,0}
+=
+2T_{\mathrm{bottom}}-T_{i,1},
+}
+\label{eq:ghost_bottom}
+\end{equation}
+and
+\begin{equation}
+\boxed{
+T_{i,n_y+1}
+=
+2T_{\mathrm{top}}-T_{i,n_y}.
+}
+\label{eq:ghost_top}
+\end{equation}
+
+For the present problem, the inlet temperature varies linearly
+with the wall-normal coordinate, while the bottom and top wall
+temperatures are zero and one, respectively:
+\begin{equation}
+T_{\mathrm{in}}(y)=y,
+\qquad
+T_{\mathrm{bottom}}=0,
+\qquad
+T_{\mathrm{top}}=1.
+\end{equation}
+Consequently, the ghost-cell values simplify to
+\begin{align}
+T_{0,j}&=2y_j-T_{1,j},
+\label{eq:ghost_inlet_specific}
+\\
+T_{i,0}&=-T_{i,1},
+\label{eq:ghost_bottom_specific}
+\\
+T_{i,n_y+1}&=2-T_{i,n_y}.
+\label{eq:ghost_top_specific}
+\end{align}
+
+\subsubsection{Outlet Boundary Condition}
+
+At the outlet, a zero streamwise temperature gradient is imposed:
+\begin{equation}
+\left.\frac{\partial T}{\partial x}\right|_{x=L_x}=0.
+\label{eq:outlet_zero_gradient}
+\end{equation}
+Using a first-order approximation to the gradient between the
+last physical cell and its ghost cell gives
+\begin{equation}
+\frac{T_{n_x+1,j}-T_{n_x,j}}{\Delta x}=0.
+\end{equation}
+Therefore, the outlet ghost-cell temperature is
+\begin{equation}
+\boxed{
+T_{n_x+1,j}=T_{n_x,j}.
+}
+\label{eq:ghost_outlet}
+\end{equation}
+
+The ghost-cell relations are applied whenever the spatial operator
+is evaluated. They provide the temperature values required by the
+discrete equations near the boundaries without introducing
+additional independent unknowns. In the subsequent numerical
+solution methods, the same boundary conditions are retained, while
+their algebraic contributions are incorporated according to the
+structure of each solver.
+
+\subsubsection{Boundary Conditions in Delta Form}
+
+In the approximate factorization method, the unknown is the
+temperature increment between consecutive time levels, defined as
+\begin{equation}
+\delta T_{i,j}^{n+1}
+=
+T_{i,j}^{n+1}-T_{i,j}^{n}.
+\label{eq:delta_temperature}
+\end{equation}
+The ghost-cell relations must therefore also be expressed in terms
+of these increments. Since the prescribed inlet and wall
+temperatures are constant in time, their increments at the
+boundary faces are zero. Applying the ghost-cell relations at
+successive time levels and subtracting them gives the corresponding
+incremental boundary conditions.
+
+At the inlet,
+\begin{equation}
+\begin{aligned}
+T_{0,j}^{n+1}&=2T_{\mathrm{in},j}-T_{1,j}^{n+1},\\
+T_{0,j}^{n}&=2T_{\mathrm{in},j}-T_{1,j}^{n},
+\end{aligned}
+\end{equation}
+and consequently,
+\begin{equation}
+\boxed{
+\delta T_{0,j}^{n+1}
+=
+-\delta T_{1,j}^{n+1}.
+}
+\label{eq:delta_ghost_inlet}
+\end{equation}
+
+Similarly, for the bottom and top walls,
+\begin{equation}
+\boxed{
+\delta T_{i,0}^{n+1}
+=
+-\delta T_{i,1}^{n+1},
+}
+\label{eq:delta_ghost_bottom}
+\end{equation}
+and
+\begin{equation}
+\boxed{
+\delta T_{i,n_y+1}^{n+1}
+=
+-\delta T_{i,n_y}^{n+1}.
+}
+\label{eq:delta_ghost_top}
+\end{equation}
+
+At the outlet, the zero-gradient condition gives
+\begin{equation}
+T_{n_x+1,j}^{n+1}=T_{n_x,j}^{n+1},
+\qquad
+T_{n_x+1,j}^{n}=T_{n_x,j}^{n},
+\end{equation}
+so that
+\begin{equation}
+\boxed{
+\delta T_{n_x+1,j}^{n+1}
+=
+\delta T_{n_x,j}^{n+1}.
+}
+\label{eq:delta_ghost_outlet}
+\end{equation}
+
+These incremental relations allow the spatial operator to be
+evaluated consistently in terms of the unknown temperature updates.
+They also ensure that the prescribed inlet and wall temperatures
+remain unchanged after each update, while the zero-gradient
+condition continues to hold at the outlet.

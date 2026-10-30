@@ -1,0 +1,9 @@
+{
+    "processor": "Intel(R) Core(TM) i7-8550U CPU @ 1.80GHz",
+    "architecture": "AMD64",
+    "system": "Windows",
+    "os_version": "10.0.19045",
+    "physical_cores": 4,
+    "logical_cores": 8,
+    "ram_gb": 15.88
+}
