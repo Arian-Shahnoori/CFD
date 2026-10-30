@@ -1,177 +1,255 @@
-# Finite-Volume Solver for the 1D Linear Advection Equation
+# Two-Dimensional Channel-Flow Heat Transfer
 
-A modular Python implementation for solving the one-dimensional linear advection equation using a finite-volume spatial discretization and explicit Runge–Kutta time integration. The project compares spatial schemes, examines CFL stability limits through Fourier analysis, and evaluates numerical accuracy using an analytical solution.
+A Python implementation of a cell-centred finite-volume solver for the two-dimensional energy equation in a channel flow. The project examines the effects of convection, thermal diffusion, and viscous dissipation on the steady-state temperature field. It also compares numerical methods for advancing the discretized equation toward steady state.
 
-## Overview
+## 1. Project Overview
 
-The governing equation is
+The computational domain is a rectangular channel with dimensions:
 
-\[
-\frac{\partial T}{\partial t}+u\frac{\partial T}{\partial x}=0,
-\qquad 0\leq x\leq L,
-\]
+$$
+L_x=5,\qquad L_y=1.
+$$
 
-with the initial and inlet conditions
+The prescribed velocity field represents fully developed laminar channel flow:
 
-\[
-T(x,0)=0,\qquad T(0,t)=\sin(2\pi t).
-\]
+$$
+u(y)=18y(1-y),\qquad v=0,
+$$
 
-The default parameters are a domain length of \(L=1\) and a constant advection velocity of \(u=2\). The analytical solution used to assess numerical error is
+with a mean velocity of $\bar{u}=3$.
 
-\[
-T(x,t)=
-\begin{cases}
-\sin\!\left(2\pi\left(t-\frac{x}{u}\right)\right), & x\leq ut,\\
-0, & x>ut.
-\end{cases}
-\]
+The energy equation accounts for convective transport, thermal diffusion, and viscous dissipation. Its parameterized form is:
 
-This problem transports an imposed inlet signal through the domain and provides a useful test case for studying numerical diffusion, dispersion, time-integration accuracy, and stability.
+$$
+\frac{\partial T}{\partial t}
+=
+-c\nabla\cdot(\mathbf{u}T)
++\frac{1}{Pe}\nabla^2T
++\frac{Br}{Pe}\Phi,
+$$
 
-## Features
+where $\Phi$ denotes the viscous-dissipation function without its multiplicative coefficient.
 
-- Cell-centred finite-volume formulation on a uniform grid.
-- Second-order upwind and second-order central spatial discretizations.
-- Explicit midpoint Runge–Kutta method (RK2) and classical fourth-order Runge–Kutta method (RK4).
-- Analytical solution for error evaluation.
-- RMS discrete \(L^2\) error and grid-convergence studies.
-- Fourier-mode amplification-factor analysis and stability maps.
-- Separate study scripts and shared plotting utilities.
-- Configurable spatial scheme, time integrator, CFL number, grid resolution, and final time.
+The dimensionless parameters are defined as:
 
-## Numerical method
+$$
+Pe=Re\,Pr,\qquad Br=Ec\,Pr.
+$$
 
-For a cell-centred finite-volume discretization, the semi-discrete equation is
+The coefficient $c$ controls the strength of convective transport.
 
-\[
-\frac{dT_i}{dt}=-\frac{u}{\Delta x}
-\left(T_{i+1/2}-T_{i-1/2}\right).
-\]
+## 2. Boundary and Initial Conditions
 
-For positive velocity, the second-order upwind reconstruction gives the interior right-hand side
+The temperature boundary conditions are:
 
-\[
-\frac{dT_i}{dt}=-\frac{u}{2\Delta x}
-\left(3T_i-4T_{i-1}+T_{i-2}\right).
-\]
+| Boundary | Condition |
+|---|---|
+| Bottom wall | $T=0$ |
+| Top wall | $T=1$ |
+| Inlet | $T_{\mathrm{in}}(y)=y$ |
+| Outlet | $\partial T/\partial x=0$ |
 
-The inlet cells use a boundary treatment consistent with the prescribed time-dependent inlet value. The temporal integrator advances the resulting semi-discrete system using either RK2 midpoint or classical RK4.
+The initial temperature field is:
 
-The Courant number is defined as
+$$
+T(x,y,0)=y.
+$$
 
-\[
-C=\frac{u\Delta t}{\Delta x}.
-\]
+The velocity field remains prescribed throughout the calculation. The project therefore solves the energy equation without simultaneously solving the momentum equations.
 
-When the number of time steps is selected from a target CFL number, the solver chooses a time-step count that reaches the requested final time. Alternatively, the number of steps can be specified directly.
+## 3. Numerical Methods
 
-## Repository structure
+The computational domain is discretized using a second-order, cell-centred finite-volume formulation on a structured Cartesian grid. Central-difference approximations are used for the spatial derivatives.
+
+The resulting semi-discrete system is advanced in pseudo-time until the steady-state residual satisfies the prescribed convergence criterion.
+
+Four numerical methods are implemented:
+
+- **Approximate factorization method (APF):** An iterative method based on factorization of the spatial operator.
+- **Sparse direct implicit method:** An implicit update based on solving a sparse linear system.
+- **Explicit midpoint Runge–Kutta (RK2):** A second-order explicit time-integration method.
+- **Classical Runge–Kutta (RK4):** A fourth-order explicit time-integration method.
+
+The methods are compared using residual histories, iteration counts, and computation times. An eigenvalue-based stability analysis is also performed to estimate the time-step restrictions of the explicit methods.
+
+## 4. Parameter Study
+
+The parameter study investigates the effects of the Brinkman number, convection coefficient, and Peclet number on the steady-state temperature distribution.
+
+### 4.1 Brinkman Number
+
+The Brinkman number controls the strength of viscous dissipation relative to thermal diffusion. The following values are considered:
+
+$$
+Br=0,\quad 0.07,\quad 0.2,
+$$
+
+with $Pe=17.5$ and $c=1$ held constant.
+
+### 4.2 Convection Coefficient
+
+The convection coefficient is varied to examine the influence of convective transport:
+
+$$
+c=0.4,\quad 1,\quad 10,
+$$
+
+with $Pe=17.5$ and $Br=0.2$ held constant.
+
+### 4.3 Peclet Number
+
+The Peclet-number study considers:
+
+$$
+Pe=1,\quad 17.5,\quad 50.
+$$
+
+The ratio $Br/Pe$ is held constant at $0.004$. This keeps the coefficient of the viscous-dissipation source fixed while varying the thermal-diffusion coefficient $1/Pe$.
+
+Temperature contours and wall-normal temperature profiles are used to compare the resulting fields.
+
+## 5. Repository Structure
+
+The main project components are organized as follows:
 
 ```text
-.
-├── main.py
+project/
+│
 ├── src/
-│   ├── analytical.py
-│   ├── errors.py
-│   ├── stability_analysis.py
-│   ├── visualization.py
-│   └── solvers/
-│       ├── __init__.py
-│       ├── spatial_operators.py
-│       ├── time_integrators.py
-│       └── solver.py
-├── studies/
-│   ├── __init__.py
-│   ├── study_01_rk2_second_order_upwind_convergence.py
-│   ├── study_02_rk2_second_order_upwind_stability.py
-│   ├── study_03_rk2_second_order_upwind_cfl_validation.py
-│   ├── study_04_rk2_second_order_central_convergence.py
-│   ├── study_05_rk2_central_upwind_comparison.py
-│   ├── study_06_rk4_second_order_upwind_stability.py
-│   └── study_07_rk2_rk4_accuracy_comparison.py
-└── results/
-    └── figures/
+│   ├── initialization.py
+│   ├── boundary_condition.py
+│   ├── diagnostics.py
+│   ├── solvers/
+│   │   ├── apf.py
+│   │   └── ...
+│   └── visualization/
+│       └── ...
+│
+├── results/
+│   ├── solver_comparison/
+│   └── parameter_study/
+│       ├── figures/
+│       │   ├── parameter_groups/
+│       │   └── cross_sections/
+│       └── parameter_study_fields.npz
+│
+├── sections/
+│   ├── 01_problem_Formulation.tex
+│   ├── 02_Governing_Equation_and_Spatial_Discretization.tex
+│   ├── 03_Temporal_Discretization.tex
+│   └── ...
+│
+├── main.tex
+├── packages.tex
+└── README.md
 ```
 
-`main.py` acts as the entry point for the configured studies. The reusable numerical methods are implemented under `src/`, while the `studies/` directory contains the experiments and their parameter choices. Plotting routines are centralised in `src/visualization.py` to avoid duplicating figure-generation code across studies.
+This is a simplified representation of the project structure. Additional solver, visualization, and result files may be present.
 
-## Requirements
+## 6. Requirements
 
-- Python 3
+The Python implementation uses the following libraries:
+
+- Python
 - NumPy
+- SciPy
 - Matplotlib
 
-Install the core dependencies with:
+Install the main dependencies with:
 
 ```bash
-python -m pip install numpy matplotlib
+pip install numpy scipy matplotlib
 ```
 
-If the repository includes a `requirements.txt`, install the full environment with `python -m pip install -r requirements.txt` instead.
+The LaTeX report requires a LaTeX distribution and the packages specified in `packages.tex`.
 
-## Running the project
+## 7. Running the Simulations
 
-From the project root (the directory containing `main.py`), run:
+### Parameter Study
+
+The parameter-study script defines the simulation cases in `CASES` and executes them through `run_parameter_study()`.
+
+Run the parameter-study script from the project root:
 
 ```bash
-python main.py
+python path/to/parameter_study.py
 ```
 
-This runs the studies configured in `main.py`. Figures are saved under `results/figures/`. To run only a subset of experiments, adjust the study calls in `main.py` or use the corresponding study module according to its entry-point implementation.
+The script solves each unique case, generates comparison figures, and saves the numerical fields and diagnostics.
 
-## Studies and results
+The main configuration parameters are defined at the beginning of the script:
 
-### 1. RK2 with second-order upwind: grid convergence
+```python
+CELL_COUNT_X = 100
+CELL_COUNT_Y = 40
 
-At a fixed target CFL number of \(C=0.25\), the grid was refined from 20 to 160 control volumes. The observed convergence order was **1.9378**, close to the expected second-order rate.
+TIME_STEP = 0.05
+MAX_ITERATIONS = 100_000
+TOLERANCE = 1e-10
 
-![RK2 and second-order upwind grid convergence](results/figures/rk2_2ndupwind_convergence.png)
+MEAN_VELOCITY = 3.0
+```
 
-### 2. RK2 with second-order upwind: stability
+### Solver Comparison
 
-Fourier analysis predicts an interior-scheme stability limit of
+The solver-comparison script evaluates the implemented numerical methods using a common grid, convergence tolerance, and selected time steps. The corresponding configuration and execution are defined in the solver-comparison script.
 
-\[
-C_{\max}=0.5.
-\]
+The reported performance depends on the grid resolution, time step, convergence tolerance, implementation, and computational environment.
 
-Tests with the full solver at a final time of \(t=0.25\) were consistent with this prediction: the solution remained bounded at CFL values of 0.4 and 0.5, while instability appeared at approximately 0.5714. The case at the theoretical limit is marginal and should not be treated as a robust operating point.
+## 8. Generated Results
 
-![RK2 second-order upwind Fourier stability map](results/figures/rk2_2ndupwind_stability.png)
+### Solver Comparison
 
-### 3. Classical RK4 with second-order upwind: stability
+The solver-comparison study generates:
 
-For classical RK4 and the same spatial discretization, the theoretical interior-scheme limit is approximately
+- Residual versus iteration plots.
+- Residual versus elapsed-time plots.
+- Numerical data containing iteration counts, final residuals, and computation times.
 
-\[
-C_{\max}\approx 0.6963.
-\]
+### Parameter Study
 
-The sampled stability search gave approximately 0.6933; this small difference is due to the finite resolution of the numerical search grid.
+The parameter study generates:
 
-![RK4 second-order upwind Fourier stability map](results/figures/rk4_2ndupwind_stability.png)
+- Temperature-contour comparisons for the Brinkman-number cases.
+- Temperature-contour comparisons for the convection-coefficient cases.
+- Temperature-contour comparisons for the Peclet-number cases.
+- Contour and cross-section figures for selected parameter combinations.
+- Compressed numerical data containing temperature fields, parameter values, residuals, computation times, and iteration counts.
 
-### 4. RK2 and RK4: accuracy comparison
+The parameter-study data are saved in:
 
-On a fixed grid of 40 control volumes, reducing the time step decreased the RK2 error towards the nearly constant error measured with RK4. This indicates that the spatial discretization error dominated once the temporal error became sufficiently small.
+```text
+results/parameter_study/parameter_study_fields.npz
+```
 
-In a grid-refinement study at a fixed CFL number of 0.05, both methods gave an observed overall convergence order of approximately **1.9368**. Although RK4 has fourth-order temporal accuracy, the overall rate remained close to second order because both methods use a second-order spatial discretization.
+The data can be loaded in Python using:
 
-![RK2 and RK4 grid-convergence comparison](results/figures/rk2_rk4_convergence.png)
+```python
+import numpy as np
 
-## Stability-analysis scope
+data = np.load(
+    "results/parameter_study/parameter_study_fields.npz"
+)
 
-The Fourier analysis uses periodic modes to examine the interior spatial discretization and its interaction with the time integrator. The actual initial-boundary-value problem is not periodic: it has a prescribed, time-dependent inlet condition. Therefore, the Fourier-derived CFL limits are interior-scheme stability criteria rather than a complete proof of stability for the full solver. Tests using the actual inlet treatment provide a numerical cross-check, but they do not establish a general stability guarantee for every grid and simulation time.
+print(data.files)
+```
 
-The analysis also predicts that second-order central differencing combined with explicit midpoint RK2 fails the absolute-stability condition for nonzero purely imaginary Fourier modes at any positive CFL number. A solution that appears acceptable over a short interval or on a coarse grid should not, by itself, be taken as evidence of long-time stability.
+## 9. Report
 
-## Current limitations
+The project report is written in LaTeX. It covers the governing equations, spatial and temporal discretization, stability analysis, numerical accuracy assessment, computational implementation, solver comparison, and parameter study.
 
-- The central-versus-upwind comparison study is subject to a diagnostic consistency check: the current recorded errors and maximum solution magnitudes were identical for the two spatial schemes. These outputs should be regenerated after verifying scheme selection and right-hand-side dispatch; they are not used here as evidence of a quantitative comparison.
-- The grid-refinement study for central differencing currently uses only two resolutions, so its observed order is preliminary rather than a conclusive convergence verification.
-- The Fourier stability maps address the interior discretization under periodic-mode assumptions; the boundary treatment is not covered by that analysis alone.
+Compile the main LaTeX file from the project root using:
 
-## Purpose
+```bash
+latexmk -pdf main.tex
+```
 
-This project is intended as a numerical-methods study and a transparent, reproducible implementation of a small advection solver. It emphasises the connection between discretization choices, time integration, stability, and measured error rather than treating the solver as a black box.
+Alternatively, compile it using a LaTeX editor.
+
+## 10. Scope and Limitations
+
+The velocity field is prescribed and is not updated by solving the momentum equations. The study therefore focuses on heat transfer within an established channel-flow field.
+
+Central-difference spatial discretization is used for the convective and diffusive terms. Its accuracy and stability characteristics depend on the grid resolution and the relative strengths of convection and diffusion.
+
+The time variable is used for pseudo-time integration toward a steady solution. The numerical time steps and convergence histories should therefore be interpreted in the context of the steady-state solution procedure rather than as predictions of physical transient behaviour.
