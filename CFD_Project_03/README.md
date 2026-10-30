@@ -12,7 +12,7 @@ A modular Python implementation for solving the two-dimensional energy equation 
 - [Parameter-study results](CFD_03_2D_Energy_Equation/results/parameter_study/)
 - [LaTeX report](CFD_03_2D_Energy_Equation/Report/main.tex)
 - [Report sections](CFD_03_2D_Energy_Equation/Report/sections/)
-- [Compiled report (PDF)](CFD_03_2D_Energy_Equation/Report/main.pdf)
+- [Compiled report (PDF)](CFD_03_2D_Energy_Equation/Report/CFD_03_2D_Energy_Equation.pdf)
 
 ## Overview
 
