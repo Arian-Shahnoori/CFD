@@ -169,44 +169,77 @@ for all eigenvalues of the discretized operator.
 
 ```text
 .
-└── CFD_03_2D_Energy_Equation/
-    ├── Code/
-    │   └── src/
-    │       ├── initialization.py
-    │       ├── boundary_condition.py
-    │       ├── diagnostics.py
-    │       ├── solvers/
-    │       │   ├── apf.py
-    │       │   └── ...
-    │       └── visualization/
-    │           └── ...
-    │
-    ├── results/
-    │   ├── solver_comparison/
-    │   │   ├── residual_vs_iteration.png
-    │   │   ├── residual_vs_time.png
-    │   │   └── solver_comparison.csv
-    │   │
-    │   ├── parameter_study/
-    │   │   ├── figures/
-    │   │   │   ├── parameter_groups/
-    │   │   │   └── cross_sections/
-    │   │   └── parameter_study_fields.npz
-    │   │
-    │   └── temperature_evolution.gif
-    │
-    └── Report/
-        ├── main.tex
-        ├── main.pdf
-        ├── packages.tex
-        └── sections/
-            ├── 01_problem_Formulation.tex
-            ├── 02_Governing_Equation_and_Spatial_Discretization.tex
-            ├── 03_Temporal_Discretization.tex
-            ├── 04_Stability_Analysis.tex
-            ├── 05_Numerical_Accuracy_Assessment.tex
-            └── ...
-```
+├── Code/
+│   ├── main.py
+│   │
+│   ├── src/
+│   │   ├── solvers/
+│   │   │   ├── apf.py
+│   │   │   ├── direct.py
+│   │   │   ├── runge_kutta.py
+│   │   │   ├── thomas.py
+│   │   │   └── __init__.py
+│   │   │
+│   │   ├── boundary_conditions.py
+│   │   ├── config.py
+│   │   ├── diagnostics.py
+│   │   ├── grid.py
+│   │   ├── initialization.py
+│   │   └── visualization.py
+│   │
+│   └── studies/
+│       ├── __init__.py
+│       ├── afi_verification.py
+│       ├── direct_verification.py
+│       ├── grid_convergence.py
+│       ├── parameter_study.py
+│       ├── snapshots.py
+│       ├── solver_comparison.py
+│       ├── stability.py
+│       ├── temporal_accuracy.py
+│       └── time_step_efficiency.py
+│
+├── Report/
+│   ├── figures/
+│   │   └── ...
+│   ├── sections/
+│   │   ├── 01_problem_Formulation.tex
+│   │   ├── 02_Governing_Equation_and_Spatial_Discretization.tex
+│   │   ├── 03_Temporal_Discretization.tex
+│   │   ├── 04_Stability_Analysis.tex
+│   │   ├── 05_Numerical_Accuracy_Assessment.tex
+│   │   ├── 06_Computational_Setup.tex
+│   │   ├── 06b_solvers_apf.tex
+│   │   ├── 06c_solvers_runge_kutta.tex
+│   │   ├── 06d_solvers_direct.tex
+│   │   ├── 07a_result.tex
+│   │   ├── 07b_results.tex
+│   │   ├── 07c_results.tex
+│   │   ├── 07d_results.tex
+│   │   └── 08_conclusion.tex
+│   ├── main.tex
+│   └── packages.tex
+│
+├── results/
+│   ├── parameter_study/
+│   │   ├── figures/
+│   │   │   └── ...
+│   │   └── parameter_study_fields.npz
+│   │
+│   ├── solver_comparison/
+│   │   ├── ...
+│   │
+│   ├── time_step_efficiency/
+│   │   └── ...
+│   │
+│   ├── grid_self_convergence_*.npz
+│   ├── grid_self_convergence_*.png
+│   ├── temporal_self_convergence_*.npz
+│   ├── final_temperature.png
+│   ├── temperature_evolution.gif
+│   └── temperature_history.npz
+│
+└── README.md
 
 The reusable numerical methods are implemented under `Code/src/`, while the generated numerical results are stored under `results/`. The LaTeX report is organized through `Report/main.tex` and the individual section files in `Report/sections/`.
 
@@ -373,4 +406,4 @@ This project provides a numerical framework for solving the two-dimensional chan
 
 The complete project report describes the governing equations, numerical formulation, stability analysis, solver implementation, performance comparison, and parameter study.
 
-[**View the complete project report (PDF)**](CFD_03_2D_Energy_Equation/Report/main.pdf)
+[**View the complete project report (PDF)**](CFD_03_2D_Energy_Equation/Report/CFD_03_2D_Energy_Equation.pdf)
