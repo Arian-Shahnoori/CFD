@@ -100,7 +100,7 @@ The following animation shows the temperature-field evolution during pseudo-time
 
 *Representative result: pseudo-time evolution of the temperature field.*
 
-[Open the Project 03 folder](CFD_03_2D_Energy_Equation/)
+[Open the Project 03 folder](CFD_Project_03/CFD_03_2D_Energy_Equation/)
 
 ## Repository Layout
 
