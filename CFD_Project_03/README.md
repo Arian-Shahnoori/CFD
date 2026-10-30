@@ -5,13 +5,13 @@ A modular Python implementation for solving the two-dimensional energy equation 
 ## Quick links
 
 - [Source code](CFD_03_2D_Energy_Equation/Code/src/)
-- [Solver implementations](src/solvers/)
-- [Initialization and boundary conditions](src/initialization.py)
-- [Visualization utilities](src/visualization/)
-- [Solver-comparison results](results/solver_comparison/)
-- [Parameter-study results](results/parameter_study/)
-- [LaTeX report](main.tex)
-- [Report sections](sections/)
+- [Solver implementations](CFD_03_2D_Energy_Equation/Code/src/solvers/)
+- [Initialization and boundary conditions](CFD_03_2D_Energy_Equation/Code/src/initialization.py)
+- [Visualization utilities](CFD_03_2D_Energy_Equation/Code/src/visualization/)
+- [Solver-comparison results](CFD_03_2D_Energy_Equation/results/solver_comparison/)
+- [Parameter-study results](CFD_03_2D_Energy_Equation/results/parameter_study/)
+- [LaTeX report](CFD_03_2D_Energy_Equation/Report/main.tex)
+- [Report sections](CFD_03_2D_Energy_Equation/Report/sections/)
 
 ## Overview
 
